@@ -101,3 +101,18 @@ tanstackIntent:
     run: "pnpm dlx @tanstack/intent@latest load dotenv#dotenvx"
     for: "Use dotenvx to run commands with environment variables, manage multiple .env files, expand variables, and encrypt env files for safe commits and CI/CD."
 <!-- intent-skills:end -->
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as local Markdown files in `.scratch/`. See [issue-tracker.md](file:///c:/Users/ALEXIS/PROYECTOS/productos/cotidiana/docs/agents/issue-tracker.md).
+
+### Triage labels
+
+Canonical triage label vocabulary mapping. See [triage-labels.md](file:///c:/Users/ALEXIS/PROYECTOS/productos/cotidiana/docs/agents/triage-labels.md).
+
+### Domain docs
+
+Single-context domain documentation layout (`CONTEXT.md` + `docs/adr/`). See [domain.md](file:///c:/Users/ALEXIS/PROYECTOS/productos/cotidiana/docs/agents/domain.md).
+
