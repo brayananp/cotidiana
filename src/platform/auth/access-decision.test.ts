@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decideAppAccess } from "./access-decision";
+
 const localIdentity = {
 	userId: "user-1",
 	deviceId: "00000000-0000-4000-8000-000000000001",

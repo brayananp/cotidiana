@@ -4,7 +4,6 @@ import {
 	FieldError,
 	FieldLabel,
 } from "@/shared/components/ui/field";
-
 import { Input } from "@/shared/components/ui/input";
 import { useFieldContext } from "@/shared/hooks/form-context";
 
@@ -32,19 +31,19 @@ export function TextField({
 	return (
 		<Field data-invalid={isInvalid}>
 			<FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-			
-				<Input
-					id={field.name}
-					name={field.name}
-					type={type}
-					autoComplete={autoComplete}
-					placeholder={placeholder}
-					value={field.state.value}
-					onBlur={field.handleBlur}
-					onChange={(e) => field.handleChange(e.target.value)}
-					aria-invalid={isInvalid}
-					disabled={disabled}
-				/>
+
+			<Input
+				id={field.name}
+				name={field.name}
+				type={type}
+				autoComplete={autoComplete}
+				placeholder={placeholder}
+				value={field.state.value}
+				onBlur={field.handleBlur}
+				onChange={(e) => field.handleChange(e.target.value)}
+				aria-invalid={isInvalid}
+				disabled={disabled}
+			/>
 			{description !== undefined && (
 				<FieldDescription>{description}</FieldDescription>
 			)}

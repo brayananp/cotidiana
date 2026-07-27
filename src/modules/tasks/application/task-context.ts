@@ -1,4 +1,4 @@
 export type TaskExecutionContext = {
-  userId: string
-  deviceId: string
-}
+	userId: string;
+	deviceId: string;
+};

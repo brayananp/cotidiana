@@ -1,6 +1,6 @@
 import { AppShell } from "#/app/layouts/app-shell";
-import { TaskSyncBootstrap } from "#/platform/sync";
 import { resolveAppAccess } from "#/platform/auth/app-access";
+import { TaskSyncBootstrap } from "#/platform/sync";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 function AppShellWrapper() {
@@ -20,16 +20,16 @@ export const Route = createFileRoute("/_app")({
 		const access = await resolveAppAccess();
 		if (!access.canEnterApp) {
 			throw redirect({
-			  to: '/login',
-			  search: {
-				redirect: location.href,
-			  },
-			})
-		  }
+				to: "/login",
+				search: {
+					redirect: location.href,
+				},
+			});
+		}
 
-		  return {
+		return {
 			access,
-		  }
+		};
 	},
 	component: AppShellWrapper,
 });

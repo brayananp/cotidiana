@@ -1,14 +1,13 @@
-import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-
-import { Button } from "@/shared/components/ui/button";
 import { authClient } from "#/platform/auth/auth-client";
 import { useAppForm } from "#/shared/hooks/form";
+import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { completeAuthentication } from "@/modules/identity/application/complete-authentication";
 import {
-	registerSchema,
 	type RegisterInput,
+	registerSchema,
 } from "@/modules/identity/schemas/register.schema";
+import { Button } from "@/shared/components/ui/button";
 
 const defaultValues: RegisterInput = {
 	name: "",

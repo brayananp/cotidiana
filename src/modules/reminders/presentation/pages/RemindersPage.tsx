@@ -15,10 +15,18 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "#/shared/components/ui/tabs";
+import {
+	Calendar01Icon,
+	Clock01Icon,
+	Edit03Icon,
+	Link01Icon,
+	TaskDone01Icon,
+	UnfoldMoreIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useRouteContext } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Reminder, ReminderStatus } from "../../domain/reminder";
 import { NotificationPermissionCard } from "../components/NotificationPermissionCard";
 import { ReminderForm } from "../components/ReminderForm";
@@ -79,6 +87,8 @@ function RemindersContent({
 	const [filter, setFilter] = useState<ReminderFilter>("active");
 	const [search, setSearch] = useState("");
 	const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+	const [isFormOpen, setIsFormOpen] = useState(false);
+	const [isMobileViewport, setIsMobileViewport] = useState(false);
 
 	const statuses = useMemo(() => statusesForFilter(filter), [filter]);
 	const reminders = useReminders(userId, statuses, search);
@@ -87,6 +97,34 @@ function RemindersContent({
 		userId,
 		deviceId,
 	};
+
+	useEffect(() => {
+		if (typeof window === "undefined") {
+			return;
+		}
+
+		const query = window.matchMedia("(max-width: 767px)");
+
+		const sync = () => setIsMobileViewport(query.matches);
+		sync();
+
+		query.addEventListener?.("change", sync);
+		return () => {
+			query.removeEventListener?.("change", sync);
+		};
+	}, []);
+
+	useEffect(() => {
+		if (editingReminder) {
+			setIsFormOpen(true);
+		}
+	}, [editingReminder]);
+
+	const handleCompleted = () => {
+		setEditingReminder(null);
+	};
+
+	const isDrawerMode = isMobileViewport;
 
 	return (
 		<motion.section
@@ -104,12 +142,61 @@ function RemindersContent({
 
 			<NotificationPermissionCard />
 
-			<ReminderForm
-				key={editingReminder?.id ?? "new-reminder"}
-				context={context}
-				reminder={editingReminder}
-				onCompleted={() => setEditingReminder(null)}
-			/>
+			{isDrawerMode ? (
+				<>
+					<Button
+						type="button"
+						variant="default"
+						className="sm:hidden"
+						onClick={() => {
+							setEditingReminder(null);
+							setIsFormOpen((next) => !next);
+						}}
+					>
+						<HugeiconsIcon
+							icon={Link01Icon}
+							strokeWidth={2}
+							data-icon="inline-start"
+						/>
+						{editingReminder ? "Editar recordatorio" : "Nuevo recordatorio"}
+					</Button>
+
+					<AnimatePresence mode="wait">
+						{isFormOpen ? (
+							<motion.div
+								key="form-drawer"
+								initial={{ opacity: 0, height: 0 }}
+								animate={{ opacity: 1, height: "auto" }}
+								exit={{ opacity: 0, height: 0 }}
+								transition={{ duration: 0.25 }}
+								className="overflow-hidden"
+							>
+								<ReminderForm
+									key={editingReminder?.id ?? "new-reminder-drawer"}
+									context={context}
+									reminder={editingReminder}
+									mode="drawer"
+									open={isFormOpen}
+									onOpenChange={(next) => {
+										setIsFormOpen(next);
+										if (!next) {
+											setEditingReminder(null);
+										}
+									}}
+									onCompleted={handleCompleted}
+								/>
+							</motion.div>
+						) : null}
+					</AnimatePresence>
+				</>
+			) : (
+				<ReminderForm
+					key={editingReminder?.id ?? "new-reminder"}
+					context={context}
+					reminder={editingReminder}
+					onCompleted={handleCompleted}
+				/>
+			)}
 
 			<Separator />
 
@@ -155,6 +242,10 @@ function RemindersContent({
 							onEdit={setEditingReminder}
 							filterLabel={tab.label}
 							search={search}
+							onCreate={() => {
+								setEditingReminder(null);
+								setIsFormOpen(true);
+							}}
 						/>
 					</TabsContent>
 				))}
@@ -169,12 +260,14 @@ function RemindersList({
 	onEdit,
 	filterLabel,
 	search,
+	onCreate,
 }: {
 	reminders: Reminder[];
 	context: { userId: string; deviceId: string };
 	onEdit: (reminder: Reminder) => void;
 	filterLabel: string;
 	search: string;
+	onCreate: () => void;
 }) {
 	return (
 		<AnimatePresence mode="popLayout">
@@ -202,8 +295,18 @@ function RemindersList({
 								</EmptyDescription>
 								{!search && (
 									<div className="pt-2">
-										<Button variant="outline" size="sm" asChild>
-											<a href="#form">Crear recordatorio</a>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={onCreate}
+										>
+											<HugeiconsIcon
+												icon={Link01Icon}
+												strokeWidth={2}
+												data-icon="inline-start"
+											/>
+											Crear recordatorio
 										</Button>
 									</div>
 								)}

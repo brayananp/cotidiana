@@ -1,4 +1,8 @@
 import { authClient } from "#/platform/auth/auth-client";
+import { MenuIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { TaskSyncStatus } from "@/shared/components/TaskSyncStatus";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -18,15 +22,12 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/shared/components/ui/sheet";
-import { MenuIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 
 const navItems = [
 	{ to: "/dashboard", label: "Dashboard" },
 	{ to: "/tasks", label: "Tareas" },
 	{ to: "/scheduling", label: "Agenda" },
+	{ to: "/reminders", label: "Recordatorios" },
 ] as const;
 
 export function AppShell() {

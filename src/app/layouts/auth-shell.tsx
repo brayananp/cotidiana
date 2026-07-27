@@ -1,5 +1,4 @@
 import { Link, Outlet } from "@tanstack/react-router";
-
 import {
 	Card,
 	CardContent,

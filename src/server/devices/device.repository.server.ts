@@ -1,7 +1,7 @@
 import type { RegisterDeviceInput } from "#/platform/auth/device.schema";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/server/database/client.server";
 import { device } from "@/server/database/schema/device.schema";
-import { and, eq } from "drizzle-orm";
 
 export async function registerDeviceForUser(
 	userId: string,

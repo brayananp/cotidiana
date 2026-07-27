@@ -13,9 +13,7 @@ export function TaskSyncStatus({ userId }: TaskSyncStatusProps) {
 
 	const label = getLabel(status);
 
-	return (
-		<span className="text-xs text-muted-foreground">{label}</span>
-	);
+	return <span className="text-xs text-muted-foreground">{label}</span>;
 }
 
 function getLabel(status: {

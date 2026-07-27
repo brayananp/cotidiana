@@ -3,7 +3,6 @@ import {
 	browserReportsOnline,
 	isServerAvailable,
 } from "@/platform/network/network-status";
-
 import { decideAppAccess } from "./access-decision";
 import type { AppAccess, LocalIdentitySnapshot } from "./app-access.types";
 import { authClient } from "./auth-client";

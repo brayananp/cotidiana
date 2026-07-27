@@ -147,6 +147,16 @@ export type PullSchedulingChange = {
 	createdAt: string;
 };
 
+export type PullReminderChange = {
+	sequence: number;
+	entityType: "reminder";
+	entityId: string;
+	operation: SyncOperationType;
+	version: number;
+	payload: Json;
+	createdAt: string;
+};
+
 export function createSyncMetadataId(
 	entityType: SyncEntityType,
 	entityId: string,

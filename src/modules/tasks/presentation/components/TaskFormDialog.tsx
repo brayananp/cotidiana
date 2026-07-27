@@ -1,7 +1,6 @@
 import { ResponsiveDialog } from "@/shared/components/responsive-dialog";
-
-import type { Task } from "../../domain/task";
 import type { TaskExecutionContext } from "../../application/task-context";
+import type { Task } from "../../domain/task";
 import { TaskForm } from "./TaskForm";
 
 type TaskFormDialogProps = {

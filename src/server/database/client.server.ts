@@ -20,9 +20,9 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export const db = drizzle({
-	client:tursoClient,
-	connection:{
-		url:env.TURSO_DATABASE_URL,
-		authToken:env.TURSO_AUTH_TOKEN,
+	client: tursoClient,
+	connection: {
+		url: env.TURSO_DATABASE_URL,
+		authToken: env.TURSO_AUTH_TOKEN,
 	},
-})
+});

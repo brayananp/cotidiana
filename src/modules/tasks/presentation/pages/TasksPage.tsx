@@ -1,11 +1,16 @@
+import { Task01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useRouteContext } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-
+import type { Task } from "@/modules/tasks/domain/task";
+import { TaskFormDialog } from "@/modules/tasks/presentation/components/TaskFormDialog";
+import { TaskItem } from "@/modules/tasks/presentation/components/TaskItem";
+import { usePendingTaskChanges } from "@/modules/tasks/presentation/hooks/use-pending-task-changes";
+import { useTasks } from "@/modules/tasks/presentation/hooks/use-tasks";
+import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import { Badge } from "@/shared/components/ui/badge";
-import { Skeleton } from "@/shared/components/ui/skeleton";
 import {
 	Select,
 	SelectContent,
@@ -13,11 +18,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/shared/components/ui/select";
-import type { Task } from "@/modules/tasks/domain/task";
-import { TaskFormDialog } from "@/modules/tasks/presentation/components/TaskFormDialog";
-import { TaskItem } from "@/modules/tasks/presentation/components/TaskItem";
-import { usePendingTaskChanges } from "@/modules/tasks/presentation/hooks/use-pending-task-changes";
-import { useTasks } from "@/modules/tasks/presentation/hooks/use-tasks";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 
 const statusOptions = [
 	{ value: "all", label: "Todos los estados" },
@@ -142,19 +143,7 @@ function TasksContent({
 			{tasks.length === 0 ? (
 				<div className="flex flex-col items-center justify-center rounded-2xl border border-dashed p-12 text-center">
 					<div className="mb-4 rounded-full bg-muted p-4">
-						<svg
-							className="size-8 text-muted-foreground"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={1.5}
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-							/>
-						</svg>
+						<HugeiconsIcon icon={Task01Icon} />
 					</div>
 					<h3 className="font-medium">No hay tareas</h3>
 					<p className="mt-1 text-sm text-muted-foreground">

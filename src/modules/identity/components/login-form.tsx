@@ -1,14 +1,13 @@
+import { useAppForm } from "#/shared/hooks/form";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
-
-import { Button } from "@/shared/components/ui/button";
-import { useAppForm } from "#/shared/hooks/form";
 import { completeAuthentication } from "@/modules/identity/application/complete-authentication";
 import {
-	loginSchema,
 	type LoginInput,
+	loginSchema,
 } from "@/modules/identity/schemas/login.schema";
 import { authClient } from "@/platform/auth/auth-client";
+import { Button } from "@/shared/components/ui/button";
 
 const defaultValues: LoginInput = {
 	email: "",

@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/shared/components/ui/card";
+import { tasksDependencies } from "@/modules/tasks/infrastructure/tasks.dependencies";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { tasksDependencies } from "@/modules/tasks/infrastructure/tasks.dependencies";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import type { TaskExecutionContext } from "../../application/task-context";
 import type { Task, TaskStatus } from "../../domain/task";
 import { taskPriorityLabels, taskStatusLabels } from "../task-labels";

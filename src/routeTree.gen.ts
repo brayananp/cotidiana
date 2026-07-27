@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppRemindersRouteImport } from './routes/_app/reminders'
 import { Route as AppSchedulingRouteImport } from './routes/_app/scheduling'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
@@ -36,6 +37,11 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppRemindersRoute = AppRemindersRouteImport.update({
+  id: '/reminders',
+  path: '/reminders',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppSchedulingRoute = AppSchedulingRouteImport.update({
@@ -72,6 +78,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof AppDashboardRoute
+  '/reminders': typeof AppRemindersRoute
   '/scheduling': typeof AppSchedulingRoute
   '/tasks': typeof AppTasksRoute
   '/login': typeof AuthLoginRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof AppDashboardRoute
+  '/reminders': typeof AppRemindersRoute
   '/scheduling': typeof AppSchedulingRoute
   '/tasks': typeof AppTasksRoute
   '/login': typeof AuthLoginRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteRouteWithChildren
   '/_auth': typeof AuthRouteRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/reminders': typeof AppRemindersRoute
   '/_app/scheduling': typeof AppSchedulingRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/reminders'
     | '/scheduling'
     | '/tasks'
     | '/login'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/reminders'
     | '/scheduling'
     | '/tasks'
     | '/login'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/_app/dashboard'
+    | '/_app/reminders'
     | '/_app/scheduling'
     | '/_app/tasks'
     | '/_auth/login'
@@ -173,6 +185,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/reminders': {
+      id: '/_app/reminders'
+      path: '/reminders'
+      fullPath: '/reminders'
+      preLoaderRoute: typeof AppRemindersRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/scheduling': {
@@ -222,12 +241,14 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppRemindersRoute: typeof AppRemindersRoute
   AppSchedulingRoute: typeof AppSchedulingRoute
   AppTasksRoute: typeof AppTasksRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppRemindersRoute: AppRemindersRoute,
   AppSchedulingRoute: AppSchedulingRoute,
   AppTasksRoute: AppTasksRoute,
 }

@@ -1,6 +1,19 @@
 "use client";
 
+import {
+	Alert,
+	AlertDescription,
+	AlertTitle,
+} from "#/shared/components/ui/alert";
 import { Button } from "#/shared/components/ui/button";
+import {
+	Field,
+	FieldContent,
+	FieldDescription,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from "#/shared/components/ui/field";
 import { Input } from "#/shared/components/ui/input";
 import {
 	Select,
@@ -10,8 +23,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "#/shared/components/ui/select";
+import { Spinner } from "#/shared/components/ui/spinner";
 import { Textarea } from "#/shared/components/ui/textarea";
+import { toast } from "#/shared/components/ui/toast";
+import { Alert01Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useForm } from "@tanstack/react-form";
+import { motion } from "motion/react";
 import { useState } from "react";
 import { isoToLocalDateTime } from "../../application/date-mapper";
 import type { SchedulingExecutionContext } from "../../application/scheduling-context";
@@ -24,7 +42,7 @@ import {
 import { useTaskOptions } from "../hooks/use-task-options";
 import { timeBlockKindLabels } from "../labels";
 import { defaultLocalDateTime } from "../week-utils";
-import { FormField, getSchedulingError } from "./form-field.shared";
+import { getSchedulingError } from "./form-field.shared";
 
 type TimeBlockFormProps = {
 	context: SchedulingExecutionContext;
@@ -66,6 +84,7 @@ export function TimeBlockForm({
 		},
 		onSubmit: async ({ value }) => {
 			setSubmitError(null);
+			const actionLabel = block ? "actualizado" : "creado";
 			try {
 				if (block) {
 					await schedulingDependencies.updateTimeBlock(
@@ -76,154 +95,258 @@ export function TimeBlockForm({
 				} else {
 					await schedulingDependencies.createTimeBlock(value, context);
 				}
+				toast.add({
+					type: "success",
+					title: "Bloque guardado",
+					description: `El bloque de tiempo fue ${actionLabel} con éxito.`,
+				});
 				form.reset();
 				onCompleted?.();
 			} catch (error) {
-				setSubmitError(
-					getSchedulingError(error, "No fue posible guardar el bloque."),
+				const message = getSchedulingError(
+					error,
+					"No fue posible guardar el bloque.",
 				);
+				setSubmitError(message);
+				toast.add({
+					type: "error",
+					title: "No se pudo guardar",
+					description: message,
+				});
 			}
 		},
 	});
 
 	return (
 		<form
-			className="space-y-4"
+			className="flex flex-col gap-6"
 			onSubmit={(event) => {
 				event.preventDefault();
 				event.stopPropagation();
 				void form.handleSubmit();
 			}}
 		>
-			<div className="grid gap-4 md:grid-cols-2">
-				<form.Field name="title">
-					{(field) => (
-						<FormField label="Título" errors={field.state.meta.errors}>
-							<Input
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								placeholder="Ej: Preparar presentación"
-							/>
-						</FormField>
-					)}
-				</form.Field>
+			<FieldGroup>
+				<div className="grid gap-6 md:grid-cols-2">
+					<form.Field name="title">
+						{(field) => {
+							const invalid = field.state.meta.errors.length > 0;
+							return (
+								<Field data-invalid={invalid || undefined}>
+									<FieldLabel htmlFor={field.name}>Título</FieldLabel>
+									<FieldContent>
+										<Input
+											id={field.name}
+											aria-invalid={invalid || undefined}
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+											placeholder="Ej: Preparar presentación"
+										/>
+										<FieldDescription>
+											Identifica claramente el objetivo de este bloque.
+										</FieldDescription>
+										<FieldError errors={field.state.meta.errors} />
+									</FieldContent>
+								</Field>
+							);
+						}}
+					</form.Field>
 
-				<form.Field name="kind">
-					{(field) => (
-						<FormField label="Tipo" errors={field.state.meta.errors}>
-							<Select
-								value={field.state.value}
-								onValueChange={(v) =>
-									field.handleChange(v as typeof field.state.value)
-								}
-							>
-								<SelectTrigger className="w-full">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectGroup>
-										{TIME_BLOCK_KINDS.map((kind) => (
-											<SelectItem key={kind} value={kind}>
-												{timeBlockKindLabels[kind]}
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						</FormField>
-					)}
-				</form.Field>
+					<form.Field name="kind">
+						{(field) => {
+							const invalid = field.state.meta.errors.length > 0;
+							return (
+								<Field data-invalid={invalid || undefined}>
+									<FieldLabel htmlFor={field.name}>Tipo</FieldLabel>
+									<FieldContent>
+										<Select
+											value={field.state.value}
+											onValueChange={(v) =>
+												field.handleChange(v as typeof field.state.value)
+											}
+										>
+											<SelectTrigger
+												id={field.name}
+												aria-invalid={invalid || undefined}
+											>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectGroup>
+													{TIME_BLOCK_KINDS.map((kind) => (
+														<SelectItem key={kind} value={kind}>
+															{timeBlockKindLabels[kind]}
+														</SelectItem>
+													))}
+												</SelectGroup>
+											</SelectContent>
+										</Select>
+										<FieldError errors={field.state.meta.errors} />
+									</FieldContent>
+								</Field>
+							);
+						}}
+					</form.Field>
 
-				<form.Field name="taskId">
-					{(field) => (
-						<FormField
-							label="Tarea relacionada"
-							errors={field.state.meta.errors}
-						>
-							<Select
-								value={field.state.value}
-								onValueChange={(v) => field.handleChange(v ?? "")}
-							>
-								<SelectTrigger className="w-full">
-									<SelectValue placeholder="Sin tarea" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectGroup>
-										<SelectItem value="">Sin tarea</SelectItem>
-										{tasks.map((task) => (
-											<SelectItem key={task.id} value={task.id}>
-												{task.title}
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						</FormField>
-					)}
-				</form.Field>
+					<form.Field name="taskId">
+						{(field) => {
+							const invalid = field.state.meta.errors.length > 0;
+							return (
+								<Field data-invalid={invalid || undefined}>
+									<FieldLabel htmlFor={field.name}>
+										Tarea relacionada
+									</FieldLabel>
+									<FieldContent>
+										<Select
+											value={field.state.value}
+											onValueChange={(v) => field.handleChange(v ?? "")}
+										>
+											<SelectTrigger
+												id={field.name}
+												aria-invalid={invalid || undefined}
+											>
+												<SelectValue placeholder="Sin tarea" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectGroup>
+													<SelectItem value="">Sin tarea</SelectItem>
+													{tasks.map((task) => (
+														<SelectItem key={task.id} value={task.id}>
+															{task.title}
+														</SelectItem>
+													))}
+												</SelectGroup>
+											</SelectContent>
+										</Select>
+										<FieldDescription>
+											Vincula el bloque a una tarea para sincronizar progreso.
+										</FieldDescription>
+										<FieldError errors={field.state.meta.errors} />
+									</FieldContent>
+								</Field>
+							);
+						}}
+					</form.Field>
 
-				<form.Field name="notes">
-					{(field) => (
-						<FormField label="Notas" errors={field.state.meta.errors}>
-							<Textarea
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								placeholder="Notas adicionales..."
-							/>
-						</FormField>
-					)}
-				</form.Field>
+					<form.Field name="notes">
+						{(field) => {
+							const invalid = field.state.meta.errors.length > 0;
+							return (
+								<Field data-invalid={invalid || undefined}>
+									<FieldLabel htmlFor={field.name}>Notas</FieldLabel>
+									<FieldContent>
+										<Textarea
+											id={field.name}
+											aria-invalid={invalid || undefined}
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+											placeholder="Notas adicionales..."
+										/>
+										<FieldError errors={field.state.meta.errors} />
+									</FieldContent>
+								</Field>
+							);
+						}}
+					</form.Field>
 
-				<form.Field name="startAt">
-					{(field) => (
-						<FormField label="Inicio" errors={field.state.meta.errors}>
-							<Input
-								type="datetime-local"
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-							/>
-						</FormField>
-					)}
-				</form.Field>
+					<form.Field name="startAt">
+						{(field) => {
+							const invalid = field.state.meta.errors.length > 0;
+							return (
+								<Field data-invalid={invalid || undefined}>
+									<FieldLabel htmlFor={field.name}>Inicio</FieldLabel>
+									<FieldContent>
+										<Input
+											id={field.name}
+											type="datetime-local"
+											aria-invalid={invalid || undefined}
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+										<FieldError errors={field.state.meta.errors} />
+									</FieldContent>
+								</Field>
+							);
+						}}
+					</form.Field>
 
-				<form.Field name="endAt">
-					{(field) => (
-						<FormField label="Fin" errors={field.state.meta.errors}>
-							<Input
-								type="datetime-local"
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-							/>
-						</FormField>
-					)}
-				</form.Field>
-			</div>
+					<form.Field name="endAt">
+						{(field) => {
+							const invalid = field.state.meta.errors.length > 0;
+							return (
+								<Field data-invalid={invalid || undefined}>
+									<FieldLabel htmlFor={field.name}>Fin</FieldLabel>
+									<FieldContent>
+										<Input
+											id={field.name}
+											type="datetime-local"
+											aria-invalid={invalid || undefined}
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+										<FieldError errors={field.state.meta.errors} />
+									</FieldContent>
+								</Field>
+							);
+						}}
+					</form.Field>
+				</div>
+			</FieldGroup>
 
 			{submitError && (
-				<div
-					role="alert"
-					className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+				<motion.div
+					initial={{ opacity: 0, y: -6 }}
+					animate={{ opacity: 1, y: 0 }}
+					exit={{ opacity: 0, y: -6 }}
 				>
-					{submitError}
-				</div>
+					<Alert variant="destructive">
+						<HugeiconsIcon
+							icon={Alert01Icon}
+							strokeWidth={2}
+							data-icon="inline-start"
+						/>
+						<AlertTitle>No fue posible guardar</AlertTitle>
+						<AlertDescription>{submitError}</AlertDescription>
+					</Alert>
+				</motion.div>
 			)}
 
 			<form.Subscribe
 				selector={(state) => [state.canSubmit, state.isSubmitting]}
 			>
 				{([canSubmit, isSubmitting]) => (
-					<div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+					<div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
 						{block && (
-							<Button type="button" variant="outline" onClick={onCompleted}>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={onCompleted}
+								disabled={isSubmitting}
+							>
 								Cancelar
 							</Button>
 						)}
 						<Button type="submit" disabled={!canSubmit || isSubmitting}>
-							{isSubmitting ? "Guardando…" : "Guardar bloque"}
+							{isSubmitting ? (
+								<>
+									<Spinner aria-hidden="true" data-icon="inline-start" />
+									Guardando…
+								</>
+							) : (
+								<>
+									<HugeiconsIcon
+										icon={CheckmarkCircle02Icon}
+										strokeWidth={2}
+										data-icon="inline-start"
+										aria-hidden="true"
+									/>
+									{block ? "Actualizar bloque" : "Guardar bloque"}
+								</>
+							)}
 						</Button>
 					</div>
 				)}

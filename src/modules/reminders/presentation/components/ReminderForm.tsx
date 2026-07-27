@@ -13,6 +13,15 @@ import {
 	CardTitle,
 } from "#/shared/components/ui/card";
 import {
+	Drawer,
+	DrawerClose,
+	DrawerContent,
+	DrawerDescription,
+	DrawerFooter,
+	DrawerHeader,
+	DrawerTitle,
+} from "#/shared/components/ui/drawer";
+import {
 	Field,
 	FieldContent,
 	FieldError,
@@ -25,6 +34,7 @@ import {
 	SelectContent,
 	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "#/shared/components/ui/select";
@@ -32,11 +42,16 @@ import { Separator } from "#/shared/components/ui/separator";
 import { Spinner } from "#/shared/components/ui/spinner";
 import { Textarea } from "#/shared/components/ui/textarea";
 import { cn } from "#/shared/lib/utils";
-import { Link01Icon } from "@hugeicons/core-free-icons";
+import {
+	Cancel01Icon,
+	CancelCircleIcon,
+	Link01Icon,
+	Tick02Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useForm } from "@tanstack/react-form";
-import { motion } from "motion/react";
-import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isoToLocalDateTime } from "../../application/date-mapper";
 import type { ReminderExecutionContext } from "../../application/reminder-context";
 import {
@@ -56,29 +71,48 @@ import { reminderRecurrenceLabels, reminderTargetTypeLabels } from "../labels";
 type ReminderFormProps = {
 	context: ReminderExecutionContext;
 	reminder?: Reminder | null;
+	mode?: "inline" | "drawer";
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 	onCompleted?: () => void;
 };
+
+// Tipo del formulario derivado directamente de useForm, sin funciones auxiliares
+// que invoquen hooks fuera de un componente o hook real.
+type ReminderFormApi = ReturnType<typeof useForm<ReminderFormInput>>;
 
 export function ReminderForm({
 	context,
 	reminder,
+	mode = "inline",
+	open,
+	onOpenChange,
 	onCompleted,
 }: ReminderFormProps) {
 	const [submitError, setSubmitError] = useState<string | null>(null);
 
-	const defaultDate = new Date(Date.now() + 30 * 60_000);
+	// Identificador estable para detectar cuándo realmente cambió el
+	// recordatorio que se está editando (o si se pasó a modo "nuevo").
+	const formKey = reminder?.id ?? "new";
 
-	const defaultValues: ReminderFormInput = {
-		title: reminder?.title ?? "",
-		notes: reminder?.notes ?? "",
-		targetType: reminder?.targetType ?? "custom",
-		targetId: reminder?.targetId ?? "",
-		remindAt: reminder
-			? isoToLocalDateTime(reminder.remindAt)
-			: toLocalDateTime(defaultDate),
-		recurrence: reminder?.recurrence ?? "none",
-		repeatInterval: reminder?.repeatInterval ?? 1,
-	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <>
+	const defaultValues = useMemo<ReminderFormInput>(() => {
+		const defaultDate = new Date(Date.now() + 30 * 60_000);
+
+		return {
+			title: reminder?.title ?? "",
+			notes: reminder?.notes ?? "",
+			targetType: reminder?.targetType ?? "custom",
+			targetId: reminder?.targetId ?? "",
+			remindAt: reminder
+				? isoToLocalDateTime(reminder.remindAt)
+				: toLocalDateTime(defaultDate),
+			recurrence: reminder?.recurrence ?? "none",
+			repeatInterval: reminder?.repeatInterval ?? 1,
+		};
+		// Solo se recalcula cuando cambia el recordatorio referenciado.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [formKey]);
 
 	const [selectedTargetType, setSelectedTargetType] =
 		useState<ReminderTargetType>(defaultValues.targetType);
@@ -121,17 +155,139 @@ export function ReminderForm({
 		},
 	});
 
+	// Reinicializa el formulario cuando cambia el recordatorio editado
+	// (o se pasa de "editar" a "nuevo"). useForm solo toma defaultValues
+	// en el montaje inicial, por lo que sin este efecto el formulario
+	// conservaría los valores del primer render.
+	const prevFormKeyRef = useRef(formKey);
+	useEffect(() => {
+		if (prevFormKeyRef.current === formKey) {
+			return;
+		}
+
+		prevFormKeyRef.current = formKey;
+		form.reset(defaultValues);
+		setSelectedTargetType(defaultValues.targetType);
+		setSubmitError(null);
+	}, [formKey, defaultValues, form]);
+
+	const title = reminder ? "Editar recordatorio" : "Nuevo recordatorio";
+	const description =
+		"Se guardará localmente y se sincronizará cuando haya conexión.";
+
+	const handleCompleted = () => {
+		onOpenChange?.(false);
+		onCompleted?.();
+	};
+
+	const body = (
+		<FormBody
+			form={form}
+			submitError={submitError}
+			reminder={reminder}
+			selectedTargetType={selectedTargetType}
+			setSelectedTargetType={setSelectedTargetType}
+			targetOptions={targetOptions}
+			setSubmitError={setSubmitError}
+			onCompleted={mode === "drawer" ? handleCompleted : onCompleted}
+		/>
+	);
+
+	if (mode === "drawer") {
+		const isOpen = open ?? false;
+
+		return (
+			<Drawer
+				open={isOpen}
+				onOpenChange={(next) => {
+					onOpenChange?.(next);
+					if (!next) {
+						setSubmitError(null);
+					}
+				}}
+				modal
+				showSwipeHandle
+				snapPoints={[0.92]}
+			>
+				<AnimatePresence>
+					{isOpen ? (
+						<DrawerContent
+							className="sm:max-w-2xl sm:mx-auto"
+							render={
+								<motion.div
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: 8 }}
+									transition={{ duration: 0.3, ease: "easeOut" }}
+								>
+									<DrawerHeader>
+										<DrawerTitle className="flex items-center gap-2">
+											<HugeiconsIcon
+												icon={reminder ? Tick02Icon : Link01Icon}
+												strokeWidth={2}
+												data-icon="inline-start"
+											/>
+											{title}
+										</DrawerTitle>
+										<DrawerDescription>{description}</DrawerDescription>
+									</DrawerHeader>
+									<div className="px-4 pb-0">{body}</div>
+									<DrawerFooter>
+										<DrawerClose
+											render={
+												<Button type="button" variant="outline" size="sm">
+													Cancelar
+												</Button>
+											}
+										></DrawerClose>
+										<form.Subscribe
+											selector={(state) => [
+												state.canSubmit,
+												state.isSubmitting,
+											]}
+										>
+											{([canSubmit, isSubmitting]) => (
+												<Button
+													type="submit"
+													form="reminder-form"
+													size="sm"
+													disabled={!canSubmit || isSubmitting}
+												>
+													{isSubmitting ? (
+														<>
+															<Spinner data-icon="inline-start" />
+															Guardando…
+														</>
+													) : (
+														<>
+															<HugeiconsIcon
+																icon={Tick02Icon}
+																strokeWidth={2}
+																data-icon="inline-start"
+															/>
+															{reminder
+																? "Guardar cambios"
+																: "Guardar recordatorio"}
+														</>
+													)}
+												</Button>
+											)}
+										</form.Subscribe>
+									</DrawerFooter>
+								</motion.div>
+							}
+						></DrawerContent>
+					) : null}
+				</AnimatePresence>
+			</Drawer>
+		);
+	}
+
 	return (
-		<motion.form
-			id="form"
+		<motion.div
 			initial={{ opacity: 0, y: 8 }}
 			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.3, delay: 0.05 }}
-			onSubmit={(event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				void form.handleSubmit();
-			}}
+			transition={{ duration: 0.3, ease: "easeOut" }}
 		>
 			<Card
 				className={cn(
@@ -148,11 +304,9 @@ export function ReminderForm({
 								strokeWidth={2}
 								data-icon="inline-start"
 							/>
-							{reminder ? "Editar recordatorio" : "Nuevo recordatorio"}
+							{title}
 						</CardTitle>
-						<CardDescription className="text-sm">
-							Se guardará localmente y se sincronizará cuando haya conexión.
-						</CardDescription>
+						<CardDescription className="text-sm">{description}</CardDescription>
 					</div>
 					{reminder && (
 						<Button
@@ -171,282 +325,7 @@ export function ReminderForm({
 						</Button>
 					)}
 				</CardHeader>
-
-				<CardContent>
-					<FieldGroup>
-						<div className="grid gap-4 md:grid-cols-2">
-							<form.Field name="title">
-								{(field) => (
-									<Field
-										data-invalid={
-											field.state.meta.errors.length > 0 || undefined
-										}
-									>
-										<FieldLabel htmlFor="reminder-title">Título</FieldLabel>
-										<FieldContent>
-											<Input
-												id="reminder-title"
-												placeholder="Ej.: Llamar a la clínica"
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={(event) =>
-													field.handleChange(event.target.value)
-												}
-												aria-invalid={field.state.meta.errors.length > 0}
-											/>
-											<FieldError
-												errors={field.state.meta.errors.map(
-													normalizeFieldError,
-												)}
-											/>
-										</FieldContent>
-									</Field>
-								)}
-							</form.Field>
-
-							<form.Field name="remindAt">
-								{(field) => (
-									<Field
-										data-invalid={
-											field.state.meta.errors.length > 0 || undefined
-										}
-									>
-										<FieldLabel htmlFor="reminder-remind-at">
-											Fecha y hora
-										</FieldLabel>
-										<FieldContent>
-											<Input
-												id="reminder-remind-at"
-												type="datetime-local"
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={(event) =>
-													field.handleChange(event.target.value)
-												}
-												aria-invalid={field.state.meta.errors.length > 0}
-											/>
-											<FieldError
-												errors={field.state.meta.errors.map(
-													normalizeFieldError,
-												)}
-											/>
-										</FieldContent>
-									</Field>
-								)}
-							</form.Field>
-
-							<form.Field name="targetType">
-								{(field) => (
-									<Field
-										data-invalid={
-											field.state.meta.errors.length > 0 || undefined
-										}
-									>
-										<FieldLabel>Relacionado con</FieldLabel>
-										<FieldContent>
-											<Select
-												value={field.state.value}
-												onValueChange={(value) => {
-													const next = value as ReminderTargetType;
-													field.handleChange(next);
-													setSelectedTargetType(next);
-													form.setFieldValue("targetId", "");
-												}}
-											>
-												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Seleccionar tipo" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectGroup>
-														{REMINDER_TARGET_TYPES.map((targetType) => (
-															<SelectItem key={targetType} value={targetType}>
-																{reminderTargetTypeLabels[targetType]}
-															</SelectItem>
-														))}
-													</SelectGroup>
-												</SelectContent>
-											</Select>
-											<FieldError
-												errors={field.state.meta.errors.map(
-													normalizeFieldError,
-												)}
-											/>
-										</FieldContent>
-									</Field>
-								)}
-							</form.Field>
-
-							{selectedTargetType === "custom" ? null : (
-								<form.Field name="targetId">
-									{(field) => (
-										<Field
-											data-invalid={
-												field.state.meta.errors.length > 0 || undefined
-											}
-										>
-											<FieldLabel>Elemento</FieldLabel>
-											<FieldContent>
-												<Select
-													value={field.state.value || "__placeholder__"}
-													onValueChange={(value) =>
-														field.handleChange(
-															value === "__placeholder__" ? "" : value,
-														)
-													}
-													disabled={targetOptions.length === 0}
-												>
-													<SelectTrigger className="w-full">
-														<SelectValue
-															placeholder={
-																targetOptions.length === 0
-																	? "Sin elementos disponibles"
-																	: "Seleccionar"
-															}
-														/>
-													</SelectTrigger>
-													<SelectContent>
-														<SelectGroup>
-															<SelectItem value="__placeholder__" disabled>
-																Seleccionar
-															</SelectItem>
-															<Separator />
-															{targetOptions.map((option) => (
-																<SelectItem key={option.id} value={option.id}>
-																	{option.label}
-																</SelectItem>
-															))}
-														</SelectGroup>
-													</SelectContent>
-												</Select>
-												<FieldError
-													errors={field.state.meta.errors.map(
-														normalizeFieldError,
-													)}
-												/>
-											</FieldContent>
-										</Field>
-									)}
-								</form.Field>
-							)}
-
-							<form.Field name="recurrence">
-								{(field) => (
-									<Field
-										data-invalid={
-											field.state.meta.errors.length > 0 || undefined
-										}
-									>
-										<FieldLabel className="flex items-center gap-1.5">
-											<HugeiconsIcon
-												icon={Link01Icon}
-												strokeWidth={2}
-												className="size-4 text-muted-foreground"
-											/>
-											Repetición
-										</FieldLabel>
-										<FieldContent>
-											<Select
-												value={field.state.value}
-												onValueChange={(value) =>
-													field.handleChange(value as typeof field.state.value)
-												}
-											>
-												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Seleccionar" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectGroup>
-														{REMINDER_RECURRENCES.map((recurrence) => (
-															<SelectItem key={recurrence} value={recurrence}>
-																{reminderRecurrenceLabels[recurrence]}
-															</SelectItem>
-														))}
-													</SelectGroup>
-												</SelectContent>
-											</Select>
-											<FieldError
-												errors={field.state.meta.errors.map(
-													normalizeFieldError,
-												)}
-											/>
-										</FieldContent>
-									</Field>
-								)}
-							</form.Field>
-
-							<form.Subscribe selector={(state) => state.values.recurrence}>
-								{(recurrence) =>
-									recurrence === "none" ? null : (
-										<form.Field name="repeatInterval">
-											{(field) => (
-												<Field
-													data-invalid={
-														field.state.meta.errors.length > 0 || undefined
-													}
-												>
-													<FieldLabel htmlFor="reminder-interval">
-														Cada cuántas unidades
-													</FieldLabel>
-													<FieldContent>
-														<Input
-															id="reminder-interval"
-															type="number"
-															min={1}
-															max={365}
-															value={field.state.value}
-															onBlur={field.handleBlur}
-															onChange={(event) =>
-																field.handleChange(Number(event.target.value))
-															}
-															aria-invalid={field.state.meta.errors.length > 0}
-														/>
-														<FieldError
-															errors={field.state.meta.errors.map(
-																normalizeFieldError,
-															)}
-														/>
-													</FieldContent>
-												</Field>
-											)}
-										</form.Field>
-									)
-								}
-							</form.Subscribe>
-
-							<form.Field name="notes">
-								{(field) => (
-									<Field
-										data-invalid={
-											field.state.meta.errors.length > 0 || undefined
-										}
-										className="md:col-span-2"
-									>
-										<FieldLabel htmlFor="reminder-notes">Notas</FieldLabel>
-										<FieldContent>
-											<Textarea
-												id="reminder-notes"
-												rows={3}
-												placeholder="Información adicional o contexto…"
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={(event) =>
-													field.handleChange(event.target.value)
-												}
-												aria-invalid={field.state.meta.errors.length > 0}
-											/>
-											<FieldError
-												errors={field.state.meta.errors.map(
-													normalizeFieldError,
-												)}
-											/>
-										</FieldContent>
-									</Field>
-								)}
-							</form.Field>
-						</div>
-					</FieldGroup>
-				</CardContent>
-
+				{body}
 				<CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
 					{submitError ? (
 						<Alert variant="destructive" className="flex-1">
@@ -476,6 +355,7 @@ export function ReminderForm({
 								)}
 								<Button
 									type="submit"
+									form="reminder-form"
 									size="sm"
 									disabled={!canSubmit || isSubmitting}
 								>
@@ -500,6 +380,300 @@ export function ReminderForm({
 					</form.Subscribe>
 				</CardFooter>
 			</Card>
+		</motion.div>
+	);
+}
+
+type FormBodyProps = {
+	form: ReminderFormApi;
+	submitError: string | null;
+	reminder: Reminder | null | undefined;
+	selectedTargetType: ReminderTargetType;
+	setSelectedTargetType: (next: ReminderTargetType) => void;
+	targetOptions: Array<{ id: string; label: string }>;
+	setSubmitError: (value: string | null) => void;
+	onCompleted?: () => void;
+};
+
+function FormBody({
+	form,
+	submitError,
+	reminder,
+	selectedTargetType,
+	setSelectedTargetType,
+	targetOptions,
+}: FormBodyProps) {
+	return (
+		<motion.form
+			id="reminder-form"
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.3, delay: 0.05 }}
+			onSubmit={(event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				void form.handleSubmit();
+			}}
+		>
+			<CardContent>
+				<FieldGroup>
+					<div className="grid gap-4 md:grid-cols-2">
+						<form.Field name="title">
+							{(field) => (
+								<Field
+									data-invalid={field.state.meta.errors.length > 0 || undefined}
+								>
+									<FieldLabel htmlFor="reminder-title">Título</FieldLabel>
+									<FieldContent>
+										<Input
+											id="reminder-title"
+											placeholder="Ej.: Llamar a la clínica"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(event) =>
+												field.handleChange(event.target.value)
+											}
+											aria-invalid={field.state.meta.errors.length > 0}
+										/>
+										<FieldError
+											errors={field.state.meta.errors.map(normalizeFieldError)}
+										/>
+									</FieldContent>
+								</Field>
+							)}
+						</form.Field>
+
+						<form.Field name="remindAt">
+							{(field) => (
+								<Field
+									data-invalid={field.state.meta.errors.length > 0 || undefined}
+								>
+									<FieldLabel htmlFor="reminder-remind-at">
+										Fecha y hora
+									</FieldLabel>
+									<FieldContent>
+										<Input
+											id="reminder-remind-at"
+											type="datetime-local"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(event) =>
+												field.handleChange(event.target.value)
+											}
+											aria-invalid={field.state.meta.errors.length > 0}
+										/>
+										<FieldError
+											errors={field.state.meta.errors.map(normalizeFieldError)}
+										/>
+									</FieldContent>
+								</Field>
+							)}
+						</form.Field>
+
+						<form.Field name="targetType">
+							{(field) => (
+								<Field
+									data-invalid={field.state.meta.errors.length > 0 || undefined}
+								>
+									<FieldLabel>Relacionado con</FieldLabel>
+									<FieldContent>
+										<Select
+											value={field.state.value}
+											onValueChange={(value) => {
+												const next = value as ReminderTargetType;
+												field.handleChange(next);
+												setSelectedTargetType(next);
+												form.setFieldValue("targetId", "");
+											}}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue placeholder="Seleccionar tipo" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectGroup>
+													{REMINDER_TARGET_TYPES.map((targetType) => (
+														<SelectItem key={targetType} value={targetType}>
+															{reminderTargetTypeLabels[targetType]}
+														</SelectItem>
+													))}
+												</SelectGroup>
+											</SelectContent>
+										</Select>
+										<FieldError
+											errors={field.state.meta.errors.map(normalizeFieldError)}
+										/>
+									</FieldContent>
+								</Field>
+							)}
+						</form.Field>
+
+						{selectedTargetType === "custom" ? null : (
+							<form.Field name="targetId">
+								{(field) => (
+									<Field
+										data-invalid={
+											field.state.meta.errors.length > 0 || undefined
+										}
+									>
+										<FieldLabel>Elemento</FieldLabel>
+										<FieldContent>
+											<Select
+												value={field.state.value || undefined}
+												disabled={targetOptions.length === 0}
+												onValueChange={(value) => {
+													field.handleChange(value ?? "");
+												}}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue
+														placeholder={
+															targetOptions.length === 0
+																? "Sin elementos disponibles"
+																: "Seleccionar"
+														}
+													/>
+												</SelectTrigger>
+												<SelectContent>
+													<SelectGroup>
+														<SelectLabel>Elementos</SelectLabel>
+														<Separator />
+														{targetOptions.map((option) => (
+															<SelectItem key={option.id} value={option.id}>
+																{option.label}
+															</SelectItem>
+														))}
+													</SelectGroup>
+												</SelectContent>
+											</Select>
+											<FieldError
+												errors={field.state.meta.errors.map(
+													normalizeFieldError,
+												)}
+											/>
+										</FieldContent>
+									</Field>
+								)}
+							</form.Field>
+						)}
+
+						<form.Field name="recurrence">
+							{(field) => (
+								<Field
+									data-invalid={field.state.meta.errors.length > 0 || undefined}
+								>
+									<FieldLabel className="flex items-center gap-1.5">
+										<HugeiconsIcon
+											icon={Link01Icon}
+											strokeWidth={2}
+											className="size-4 text-muted-foreground"
+										/>
+										Repetición
+									</FieldLabel>
+									<FieldContent>
+										<Select
+											value={field.state.value}
+											onValueChange={(value) =>
+												field.handleChange(value as typeof field.state.value)
+											}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue placeholder="Seleccionar" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectGroup>
+													{REMINDER_RECURRENCES.map((recurrence) => (
+														<SelectItem key={recurrence} value={recurrence}>
+															{reminderRecurrenceLabels[recurrence]}
+														</SelectItem>
+													))}
+												</SelectGroup>
+											</SelectContent>
+										</Select>
+										<FieldError
+											errors={field.state.meta.errors.map(normalizeFieldError)}
+										/>
+									</FieldContent>
+								</Field>
+							)}
+						</form.Field>
+
+						<form.Subscribe selector={(state) => state.values.recurrence}>
+							{(recurrence) =>
+								recurrence === "none" ? null : (
+									<form.Field name="repeatInterval">
+										{(field) => (
+											<Field
+												data-invalid={
+													field.state.meta.errors.length > 0 || undefined
+												}
+											>
+												<FieldLabel htmlFor="reminder-interval">
+													Cada cuántas unidades
+												</FieldLabel>
+												<FieldContent>
+													<Input
+														id="reminder-interval"
+														type="number"
+														min={1}
+														max={365}
+														value={field.state.value}
+														onBlur={field.handleBlur}
+														onChange={(event) =>
+															field.handleChange(Number(event.target.value))
+														}
+														aria-invalid={field.state.meta.errors.length > 0}
+													/>
+													<FieldError
+														errors={field.state.meta.errors.map(
+															normalizeFieldError,
+														)}
+													/>
+												</FieldContent>
+											</Field>
+										)}
+									</form.Field>
+								)
+							}
+						</form.Subscribe>
+
+						<form.Field name="notes">
+							{(field) => (
+								<Field
+									data-invalid={field.state.meta.errors.length > 0 || undefined}
+									className="md:col-span-2"
+								>
+									<FieldLabel htmlFor="reminder-notes">Notas</FieldLabel>
+									<FieldContent>
+										<Textarea
+											id="reminder-notes"
+											rows={3}
+											placeholder="Información adicional o contexto…"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(event) =>
+												field.handleChange(event.target.value)
+											}
+											aria-invalid={field.state.meta.errors.length > 0}
+										/>
+										<FieldError
+											errors={field.state.meta.errors.map(normalizeFieldError)}
+										/>
+									</FieldContent>
+								</Field>
+							)}
+						</form.Field>
+					</div>
+				</FieldGroup>
+			</CardContent>
+			{submitError ? (
+				<div className="px-6 pb-6">
+					<Alert variant="destructive" className="flex-1">
+						<HugeiconsIcon icon={CancelCircleIcon} strokeWidth={2} />
+						<AlertTitle>No se pudo guardar</AlertTitle>
+						<AlertDescription>{submitError}</AlertDescription>
+					</Alert>
+				</div>
+			) : reminder ? null : null}
 		</motion.form>
 	);
 }
