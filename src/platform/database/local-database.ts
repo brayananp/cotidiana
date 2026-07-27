@@ -1,5 +1,7 @@
+import type { TaskRecord } from '#/modules/tasks/infrastructure/local/task.record'
+import type { SyncMetadataRecord, SyncOperationRecord } from '@/platform/sync/sync.types'
 import Dexie, {
-    type EntityTable,
+  type EntityTable,
 } from 'dexie'
   
   export type LocalDeviceRecord = {
@@ -46,7 +48,13 @@ import Dexie, {
       ActiveProfileRecord,
       'id'
     >
-  
+
+    tasks!: EntityTable<
+      TaskRecord,
+      'id'
+    >
+    syncOperations!: EntityTable<SyncOperationRecord, 'id'>
+    syncMetadata!: EntityTable<SyncMetadataRecord, 'id'>
     constructor() {
       super('personal-productivity-os')
   
@@ -72,6 +80,22 @@ import Dexie, {
             .modify((identity) => {
               identity.remoteSignOutPending ??= false
             })
+        })
+        this.version(3).stores({
+          localDevices: 'id, createdAt, lastOpenedAt',
+          localIdentities:
+            'id, userId, deviceId, email, updatedAt, [userId+deviceId]',
+          activeProfile:
+            'id, userId, deviceId, updatedAt',
+    
+          tasks:
+            'id, userId, status, priority, plannedAt, dueAt, updatedAt, deletedAt, [userId+status], [userId+updatedAt]',
+    
+          syncOperations:
+            'id, userId, deviceId, status, entityType, entityId, createdAt, nextRetryAt, [entityType+entityId], [status+createdAt]',
+    
+          syncMetadata:
+            'id, entityType, entityId, state, lastSyncedAt, [entityType+entityId]',
         })
     }
   }

@@ -1,5 +1,4 @@
 import { env } from "#/env";
-import * as schema from '@/server/database/schema';
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
@@ -20,6 +19,10 @@ if (process.env.NODE_ENV !== "production") {
 	globalDatabase.tursoClient = tursoClient;
 }
 
-export const db = drizzle(tursoClient, {
-	schema
-});
+export const db = drizzle({
+	client:tursoClient,
+	connection:{
+		url:env.TURSO_DATABASE_URL,
+		authToken:env.TURSO_AUTH_TOKEN,
+	},
+})
