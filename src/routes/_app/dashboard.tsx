@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/dashboard")({
 	component: RouteComponent,
@@ -25,6 +25,7 @@ function RouteComponent() {
 		  <p className="text-sm text-muted-foreground">
 			Modo de acceso: {access.mode}
 		  </p>
+		  <Link to="/tasks" className="text-blue-500">Tasks</Link>
 		</section>
 	  )
 }
