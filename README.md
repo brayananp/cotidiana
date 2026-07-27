@@ -1,260 +1,267 @@
-Welcome to your new TanStack Start app!
+# Personal Productivity OS — Autenticación Turso v1.0
 
-# Getting Started
+Implementación integrada de las antiguas Fases 01 y 02, migrada de PostgreSQL a:
 
-To run this application:
+- Turso Cloud
+- libSQL
+- Drizzle ORM
+- Better Auth
+- TanStack Start
+- Dexie
+
+## Alcance
+
+Incluye:
+
+- registro con correo y contraseña;
+- inicio y cierre de sesión;
+- Better Auth con adaptador Drizzle para SQLite;
+- Turso como base remota;
+- endpoint `/api/auth/*`;
+- registro remoto de dispositivos;
+- identidad local en Dexie;
+- acceso offline después de una autenticación satisfactoria;
+- reautenticación cuando la sesión remota expire;
+- cierre de sesión incluso cuando no existe conexión;
+- rutas `_auth` y `_app` con `ssr: false`;
+- validación Zod;
+- pruebas unitarias de la política de acceso.
+
+## Arquitectura
+
+```text
+React
+  ↓
+Dexie / IndexedDB
+  ↓
+Identidad y acceso local
+  ↓
+Server Functions / Better Auth
+  ↓
+Drizzle ORM
+  ↓
+Turso Cloud / libSQL
+```
+
+Turso no reemplaza Dexie. Turso es la persistencia remota; Dexie sigue siendo la base operativa del navegador.
+
+---
+
+## 1. Dependencias
+
+Si vienes de la versión PostgreSQL:
 
 ```bash
-pnpm install
+pnpm remove postgres
+pnpm add @libsql/client
+```
+
+Instalación completa:
+
+```bash
+pnpm add \
+  better-auth \
+  @better-auth/drizzle-adapter \
+  drizzle-orm \
+  @libsql/client \
+  dexie \
+  zod \
+  @tanstack/react-form
+
+pnpm add -D drizzle-kit dotenv vitest
+```
+
+---
+
+## 2. Crear la base Turso
+
+Instala e inicia sesión con Turso CLI y crea una base.
+
+Ejemplo:
+
+```bash
+turso db create personal-productivity-os
+turso db show --url personal-productivity-os
+turso db tokens create personal-productivity-os
+```
+
+Coloca la URL y token en `.env`.
+
+---
+
+## 3. Variables de entorno
+
+Copia `.env.example` como `.env`.
+
+```env
+TURSO_DATABASE_URL=libsql://...
+TURSO_AUTH_TOKEN=...
+BETTER_AUTH_SECRET=...
+BETTER_AUTH_URL=http://localhost:3000
+APP_ORIGIN=http://localhost:3000
+```
+
+El token de Turso solo puede utilizarse en servidor.
+
+---
+
+## 4. Regenerar el esquema Better Auth
+
+El paquete incluye un esquema SQLite funcional. Sin embargo, Better Auth puede modificar sus tablas entre versiones.
+
+Después de instalar las dependencias, regenera el esquema con la versión instalada:
+
+```bash
+pnpm dlx auth@latest generate \
+  --config ./src/server/auth/auth.server.ts \
+  --output ./src/server/database/schema/auth.schema.ts \
+  --yes
+```
+
+PowerShell:
+
+```powershell
+pnpm dlx auth@latest generate --config ./src/server/auth/auth.server.ts --output ./src/server/database/schema/auth.schema.ts --yes
+```
+
+Revisa que `device.schema.ts` continúe exportado desde `schema/index.ts`.
+
+---
+
+## 5. Migraciones Drizzle
+
+Para una migración limpia desde la versión PostgreSQL y sin datos importantes:
+
+1. conserva una copia del código anterior;
+2. elimina las migraciones PostgreSQL generadas;
+3. usa los esquemas SQLite de este paquete;
+4. genera nuevas migraciones;
+5. aplícalas a Turso.
+
+```bash
+pnpm drizzle-kit generate
+pnpm drizzle-kit migrate
+```
+
+También puedes usar:
+
+```bash
+pnpm drizzle-kit push
+```
+
+solo durante prototipado local. Para el proyecto principal se recomiendan migraciones versionadas.
+
+---
+
+## 6. Orden de integración
+
+1. `env.server.ts`
+2. `drizzle.config.ts`
+3. `server/database`
+4. `server/auth`
+5. `routes/api/auth`
+6. `platform/auth`
+7. `platform/database`
+8. `server/devices`
+9. formularios Identity
+10. rutas `_auth` y `_app`
+11. layouts
+12. migraciones
+13. pruebas
+
+---
+
+## 7. Estados de acceso
+
+```text
+remote_authenticated
+local_offline
+local_remote_unavailable
+reauthentication_required
+unauthenticated
+```
+
+### Sesión remota válida
+
+```text
+canEnterApp      = true
+canSynchronize   = true
+```
+
+### Dispositivo inicializado sin conexión
+
+```text
+canEnterApp      = true
+canSynchronize   = false
+```
+
+### Sesión remota expirada
+
+```text
+canEnterApp              = true
+canSynchronize           = false
+requiresReauthentication = true
+```
+
+### Sin sesión ni identidad local
+
+```text
+canEnterApp = false
+redirect    = /login
+```
+
+---
+
+## 8. Cierre de sesión offline
+
+Si el usuario cierra sesión sin conexión:
+
+1. se deshabilita el acceso local;
+2. se elimina el perfil activo;
+3. se registra `remoteSignOutPending`;
+4. cuando el servidor vuelva a estar disponible, se invalida la cookie remota;
+5. la sesión remota no puede volver a habilitar automáticamente el dispositivo.
+
+Los datos del dominio no se eliminan.
+
+---
+
+## 9. Verificación
+
+```bash
+pnpm drizzle-kit generate
+pnpm drizzle-kit migrate
+pnpm typecheck
+pnpm test
+pnpm build
 pnpm dev
 ```
 
-# Building For Production
+Prueba:
 
-To build this application for production:
+1. registrar cuenta;
+2. entrar al dashboard;
+3. confirmar el dispositivo en Turso;
+4. desconectar Internet;
+5. recargar `/dashboard`;
+6. comprobar acceso local;
+7. volver a conectar;
+8. cerrar sesión;
+9. confirmar redirección a `/login`.
 
-```bash
-pnpm build
+---
+
+## 10. Siguiente fase
+
+Después de integrar y validar esta versión:
+
+```text
+Fase 03
+└── Tasks local-first
+    ├── tabla Dexie
+    ├── dominio Task
+    ├── repositorio local
+    ├── casos de uso
+    ├── consultas reactivas
+    └── Sync Queue
 ```
-
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
-
-```bash
-pnpm lint
-pnpm format
-pnpm check
-```
-
-
-## Deploy with Nitro
-
-This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
-
-```bash
-npm run build
-node dist/server/index.mjs
-```
-
-The build output is a self-contained Node server. To deploy, push the `dist/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above.
-
-For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
-
-
-## T3Env
-
-- You can use T3Env to add type safety to your environment variables.
-- Add Environment variables to the `src/env.mjs` file.
-- Use the environment variables in your code.
-
-### Usage
-
-```ts
-import { env } from "#/env";
-
-console.log(env.VITE_APP_TITLE);
-```
-
-
-
-
-
-## Setting up Better Auth
-
-1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
-
-   ```bash
-   pnpm dlx @better-auth/cli secret
-   ```
-
-2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
-
-### Adding a Database (Optional)
-
-Better Auth can work in stateless mode, but to persist user data, add a database:
-
-```typescript
-// src/lib/auth.ts
-import { betterAuth } from "better-auth";
-import { Pool } from "pg";
-
-export const auth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
-  }),
-  // ... rest of config
-});
-```
-
-Then run migrations:
-
-```bash
-pnpm dlx @better-auth/cli migrate
-```
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
