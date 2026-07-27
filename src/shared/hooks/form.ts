@@ -1,4 +1,5 @@
 
+import { ButtonSubmit } from "#/shared/components/forms/button-submit";
 import { CheckboxField } from "@/shared/components/forms/checkbox-field";
 import { TextField } from "@/shared/components/forms/text-field";
 import { createFormHook } from "@tanstack/react-form";
@@ -10,6 +11,7 @@ export const { useAppForm } = createFormHook({
 		CheckboxField,
 	},
 	formComponents: {
+		ButtonSubmit,
 	},
 	fieldContext,
 	formContext,
