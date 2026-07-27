@@ -1,4 +1,3 @@
-import { requestTaskSync } from "@/platform/sync/sync-events.client";
 import { useTaskSyncStatus } from "@/platform/sync/use-task-sync-status";
 
 type TaskSyncStatusProps = {
@@ -15,14 +14,7 @@ export function TaskSyncStatus({ userId }: TaskSyncStatusProps) {
 	const label = getLabel(status);
 
 	return (
-		<button
-			type="button"
-			className="rounded-md border px-3 py-1.5 text-sm"
-			onClick={requestTaskSync}
-			title={status.lastError ?? "Ejecutar sincronización ahora"}
-		>
-			{label}
-		</button>
+		<span className="text-xs text-muted-foreground">{label}</span>
 	);
 }
 

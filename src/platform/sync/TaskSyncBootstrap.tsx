@@ -7,9 +7,7 @@ import {
 	browserReportsOnline,
 	subscribeToNetworkChanges,
 } from "@/platform/network/network-status";
-import { subscribeToTaskSyncRequests } from "./sync-events.client";
 import { createSyncRuntimeId } from "./sync.types";
-import { runTaskSync } from "./task-sync.client";
 
 const PERIODIC_SYNC_MS = 60_000;
 
@@ -36,12 +34,12 @@ export function TaskSyncBootstrap({ access }: TaskSyncBootstrapProps) {
 			}
 
 			try {
+				const { runTaskSync } = await import("./task-sync-client");
 				await runTaskSync({
 					userId: identity.userId,
 					deviceId: identity.deviceId,
 				});
 			} catch {
-				// Refresh auth/access state after server errors.
 				void router.invalidate();
 			}
 		};
@@ -74,9 +72,16 @@ export function TaskSyncBootstrap({ access }: TaskSyncBootstrapProps) {
 			void markUnavailable();
 		}
 
-		const unsubscribeRequests = subscribeToTaskSyncRequests(() => {
-			void run();
-		});
+		let unsubscribeRequests: (() => void) | undefined;
+
+		void (async () => {
+			const { subscribeToTaskSyncRequests } = await import(
+				"./sync-events-client"
+			);
+			unsubscribeRequests = subscribeToTaskSyncRequests(() => {
+				void run();
+			});
+		})();
 
 		const unsubscribeNetwork = subscribeToNetworkChanges(() => {
 			if (browserReportsOnline()) {
@@ -98,7 +103,7 @@ export function TaskSyncBootstrap({ access }: TaskSyncBootstrapProps) {
 
 		return () => {
 			disposed = true;
-			unsubscribeRequests();
+			unsubscribeRequests?.();
 			unsubscribeNetwork();
 			window.removeEventListener("focus", handleFocus);
 			window.clearInterval(interval);

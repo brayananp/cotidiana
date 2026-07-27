@@ -116,3 +116,15 @@ Canonical triage label vocabulary mapping. See [triage-labels.md](file:///c:/Use
 
 Single-context domain documentation layout (`CONTEXT.md` + `docs/adr/`). See [domain.md](file:///c:/Users/ALEXIS/PROYECTOS/productos/cotidiana/docs/agents/domain.md).
 
+## Conventions
+
+### Naming: `-client` / `-server` suffix
+
+Use `-client` (not `.client`) for client-only files, and `-server` (not `.server`) for server-only files.
+
+**Why:** TanStack DevTools Vite plugin enforces import protection with the pattern `**/*.client.*` and `**/*.server.*`. This blocks imports of files with `.client` in the path from server-bundle modules, and vice-versa. Using a hyphen instead of a dot avoids triggering this protection while keeping the semantic meaning.
+
+**Examples:**
+- `task-sync-client.ts` instead of `task-sync.client.ts`
+- `sync-events-client.ts` instead of `sync-events.client.ts`
+
