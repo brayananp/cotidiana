@@ -1,3 +1,5 @@
+import { authClient } from "#/platform/auth/auth-client";
+import { TaskSyncStatus } from "@/shared/components/TaskSyncStatus";
 import { Button } from "@/shared/components/ui/button";
 import {
 	DropdownMenu,
@@ -20,12 +22,11 @@ import { MenuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { authClient } from "#/platform/auth/auth-client";
-import { TaskSyncStatus } from "@/shared/components/TaskSyncStatus";
 
 const navItems = [
 	{ to: "/dashboard", label: "Dashboard" },
 	{ to: "/tasks", label: "Tareas" },
+	{ to: "/scheduling", label: "Agenda" },
 ] as const;
 
 export function AppShell() {

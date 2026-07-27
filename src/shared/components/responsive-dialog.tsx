@@ -1,4 +1,4 @@
-import { useMediaQuery } from "@/shared/hooks/use-media-query";
+import type { ReactNode } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -13,13 +13,16 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 } from "@/shared/components/ui/drawer";
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
+import { cn } from "@/shared/lib/utils";
 
 type ResponsiveDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	title: string;
 	description?: string;
-	children: React.ReactNode;
+	children: ReactNode;
+	contentClassName?: string;
 };
 
 export function ResponsiveDialog({
@@ -28,13 +31,14 @@ export function ResponsiveDialog({
 	title,
 	description,
 	children,
+	contentClassName,
 }: ResponsiveDialogProps) {
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 
 	if (isDesktop) {
 		return (
 			<Dialog open={open} onOpenChange={onOpenChange}>
-				<DialogContent className="sm:max-w-lg">
+				<DialogContent className={cn("sm:max-w-xl", contentClassName)}>
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
 						{description && (
@@ -54,7 +58,7 @@ export function ResponsiveDialog({
 					<DrawerTitle>{title}</DrawerTitle>
 					{description && <DrawerDescription>{description}</DrawerDescription>}
 				</DrawerHeader>
-				<div className="px-4 pb-6">{children}</div>
+				<div className={cn("px-4 pb-6", contentClassName)}>{children}</div>
 			</DrawerContent>
 		</Drawer>
 	);
