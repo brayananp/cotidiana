@@ -3,6 +3,7 @@
 import type { AppAccess } from "#/platform/auth/app-access.types";
 import { SchedulingSyncBootstrap } from "#/platform/sync/SchedulingSyncBootstrap";
 import { ResponsiveDialog } from "#/shared/components/responsive-dialog";
+import { SchedulingSyncStatus } from "#/shared/components/SchedulingSyncStatus";
 import { Button } from "#/shared/components/ui/button";
 import {
 	Card,
@@ -156,6 +157,9 @@ function SchedulingContent({
 			<div className="flex items-center justify-between">
 				<h2 className="text-lg font-semibold">sincronizacion de datos</h2>
 				<SchedulingSyncBootstrap access={access} />
+				<SchedulingSyncStatus
+					userId={access.localIdentity?.userId || access.remoteSession?.user.id}
+				/>
 			</div>
 			<Card>
 				<CardHeader>
