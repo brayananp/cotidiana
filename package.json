@@ -43,6 +43,7 @@
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
     "drizzle-orm": "1.0.0-rc.4",
+    "motion": "^12.42.2",
     "nitro": "3.0.260610-beta",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

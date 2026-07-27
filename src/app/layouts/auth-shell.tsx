@@ -1,19 +1,29 @@
 import { Link, Outlet } from "@tanstack/react-router";
 
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@/shared/components/ui/card";
+
 export function AuthShell() {
 	return (
-		<main className="grid min-h-screen place-items-center p-6">
-			<section className="w-full max-w-md space-y-6 rounded-xl border bg-card p-6 shadow-sm">
-				<header className="space-y-2">
-					<Link to="/" className="text-sm text-muted-foreground">
-						Personal Productivity OS
+		<div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
+			<Card className="w-full max-w-sm">
+				<CardHeader className="text-center">
+					<Link
+						to="/"
+						className="text-xs text-muted-foreground hover:text-foreground"
+					>
+						Cotidiana
 					</Link>
-
-					<h1 className="text-2xl font-semibold">Acceso</h1>
-				</header>
-
-				<Outlet />
-			</section>
-		</main>
+					<CardTitle className="mt-2 text-xl">Acceso</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<Outlet />
+				</CardContent>
+			</Card>
+		</div>
 	);
 }

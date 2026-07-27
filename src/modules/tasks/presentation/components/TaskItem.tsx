@@ -1,201 +1,139 @@
-import type { ReactNode } from 'react'
-
-import { tasksDependencies } from '@/modules/tasks/infrastructure/tasks.dependencies'
-import type { TaskExecutionContext } from '../../application/task-context'
-import type {
-  Task,
-  TaskStatus,
-} from '../../domain/task'
-import {
-  taskPriorityLabels,
-  taskStatusLabels,
-} from '../task-labels'
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import { tasksDependencies } from "@/modules/tasks/infrastructure/tasks.dependencies";
+import type { TaskExecutionContext } from "../../application/task-context";
+import type { Task, TaskStatus } from "../../domain/task";
+import { taskPriorityLabels, taskStatusLabels } from "../task-labels";
 
 type TaskItemProps = {
-  task: Task
-  context: TaskExecutionContext
-  onEdit: (task: Task) => void
+	task: Task;
+	context: TaskExecutionContext;
+	onEdit: (task: Task) => void;
+};
+
+const priorityVariants: Record<
+	string,
+	"default" | "secondary" | "destructive" | "outline" | "ghost"
+> = {
+	none: "ghost",
+	low: "secondary",
+	medium: "outline",
+	high: "destructive",
+	urgent: "destructive",
+} as const;
+
+const statusVariants: Record<string, "default" | "secondary" | "outline"> = {
+	todo: "secondary",
+	in_progress: "default",
+	done: "outline",
+} as const;
+
+export function TaskItem({ task, context, onEdit }: TaskItemProps) {
+	const changeStatus = async (status: TaskStatus) => {
+		await tasksDependencies.changeStatus(task.id, status, context);
+	};
+
+	const isDone = task.status === "done";
+
+	return (
+		<Card size="sm" className={isDone ? "opacity-70" : ""}>
+			<CardContent className="space-y-3 pt-(--card-spacing)">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+					<div className="min-w-0 flex-1 space-y-1.5">
+						<h3
+							className={`text-base font-medium leading-snug ${
+								isDone ? "line-through text-muted-foreground" : ""
+							}`}
+						>
+							{task.title}
+						</h3>
+						{task.description && (
+							<p className="line-clamp-2 text-sm text-muted-foreground">
+								{task.description}
+							</p>
+						)}
+					</div>
+					<div className="flex shrink-0 flex-wrap gap-1.5">
+						<Badge variant={statusVariants[task.status]}>
+							{taskStatusLabels[task.status]}
+						</Badge>
+						<Badge variant={priorityVariants[task.priority]}>
+							{taskPriorityLabels[task.priority]}
+						</Badge>
+					</div>
+				</div>
+
+				{(task.plannedAt || task.dueAt) && (
+					<div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+						{task.plannedAt && (
+							<span>Planificada: {formatDate(task.plannedAt)}</span>
+						)}
+						{task.dueAt && <span>Límite: {formatDate(task.dueAt)}</span>}
+					</div>
+				)}
+
+				<div className="flex flex-wrap gap-1.5">
+					{task.status !== "in_progress" && (
+						<Button
+							variant="outline"
+							size="xs"
+							onClick={() => changeStatus("in_progress")}
+						>
+							Iniciar
+						</Button>
+					)}
+					{task.status !== "done" && (
+						<Button
+							variant="default"
+							size="xs"
+							onClick={() => changeStatus("done")}
+						>
+							Completar
+						</Button>
+					)}
+					{task.status !== "todo" && (
+						<Button
+							variant="secondary"
+							size="xs"
+							onClick={() => changeStatus("todo")}
+						>
+							Reabrir
+						</Button>
+					)}
+					<Button variant="ghost" size="xs" onClick={() => onEdit(task)}>
+						Editar
+					</Button>
+					<Button
+						variant="ghost"
+						size="xs"
+						onClick={() =>
+							tasksDependencies.archiveTask(task.id, !task.archivedAt, context)
+						}
+					>
+						{task.archivedAt ? "Restaurar" : "Archivar"}
+					</Button>
+					<Button
+						variant="ghost"
+						size="xs"
+						className="text-destructive hover:text-destructive"
+						onClick={() => {
+							if (window.confirm("¿Eliminar esta tarea?")) {
+								tasksDependencies.deleteTask(task.id, context);
+							}
+						}}
+					>
+						Eliminar
+					</Button>
+				</div>
+			</CardContent>
+		</Card>
+	);
 }
 
-export function TaskItem({
-  task,
-  context,
-  onEdit,
-}: TaskItemProps) {
-  const changeStatus = async (
-    status: TaskStatus,
-  ) => {
-    await tasksDependencies.changeStatus(
-      task.id,
-      status,
-      context,
-    )
-  }
-
-  return (
-    <article className="space-y-3 rounded-xl border p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h3
-            className={
-              task.status === 'done'
-                ? 'font-medium line-through opacity-60'
-                : 'font-medium'
-            }
-          >
-            {task.title}
-          </h3>
-
-          {task.description && (
-            <p className="text-sm text-muted-foreground">
-              {task.description}
-            </p>
-          )}
-        </div>
-
-        <div className="flex gap-2 text-xs">
-          <span className="rounded-full border px-2 py-1">
-            {
-              taskStatusLabels[
-                task.status
-              ]
-            }
-          </span>
-
-          <span className="rounded-full border px-2 py-1">
-            {
-              taskPriorityLabels[
-                task.priority
-              ]
-            }
-          </span>
-        </div>
-      </div>
-
-      <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-        {task.plannedAt && (
-          <span>
-            Planificada:{' '}
-            {formatDate(task.plannedAt)}
-          </span>
-        )}
-
-        {task.dueAt && (
-          <span>
-            Límite:{' '}
-            {formatDate(task.dueAt)}
-          </span>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {task.status !== 'in_progress' && (
-          <ActionButton
-            onClick={() =>
-              void changeStatus(
-                'in_progress',
-              )
-            }
-          >
-            Iniciar
-          </ActionButton>
-        )}
-
-        {task.status !== 'done' && (
-          <ActionButton
-            onClick={() =>
-              void changeStatus('done')
-            }
-          >
-            Completar
-          </ActionButton>
-        )}
-
-        {task.status !== 'todo' && (
-          <ActionButton
-            onClick={() =>
-              void changeStatus('todo')
-            }
-          >
-            Reabrir
-          </ActionButton>
-        )}
-
-        <ActionButton
-          onClick={() => onEdit(task)}
-        >
-          Editar
-        </ActionButton>
-
-        <ActionButton
-          onClick={() =>
-            void tasksDependencies.archiveTask(
-              task.id,
-              !task.archivedAt,
-              context,
-            )
-          }
-        >
-          {task.archivedAt
-            ? 'Restaurar'
-            : 'Archivar'}
-        </ActionButton>
-
-        <ActionButton
-          danger
-          onClick={() => {
-            const confirmed =
-              window.confirm(
-                '¿Eliminar esta tarea?',
-              )
-
-            if (confirmed) {
-              void tasksDependencies.deleteTask(
-                task.id,
-                context,
-              )
-            }
-          }}
-        >
-          Eliminar
-        </ActionButton>
-      </div>
-    </article>
-  )
-}
-
-function ActionButton({
-  children,
-  danger = false,
-  onClick,
-}: {
-  children: ReactNode
-  danger?: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={
-        danger
-          ? 'rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive'
-          : 'rounded-md border px-3 py-1.5 text-sm'
-      }
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  )
-}
-
-function formatDate(
-  value: string,
-): string {
-  return new Intl.DateTimeFormat(
-    'es-PE',
-    {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    },
-  ).format(new Date(value))
+function formatDate(value: string): string {
+	return new Intl.DateTimeFormat("es-PE", {
+		dateStyle: "medium",
+		timeStyle: "short",
+	}).format(new Date(value));
 }
