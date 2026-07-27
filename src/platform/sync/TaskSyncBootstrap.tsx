@@ -1,6 +1,5 @@
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
-
 import type { AppAccess } from "@/platform/auth/app-access.types";
 import { getLocalDatabase } from "@/platform/database/local-database";
 import {

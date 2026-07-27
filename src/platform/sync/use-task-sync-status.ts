@@ -1,5 +1,5 @@
-import { getLocalDatabase } from "@/platform/database/local-database";
 import { useLiveQuery } from "dexie-react-hooks";
+import { getLocalDatabase } from "@/platform/database/local-database";
 import { createSyncRuntimeId } from "./sync.types";
 
 export function useTaskSyncStatus(userId: string | undefined) {

@@ -1,45 +1,43 @@
-let fallbackLock = false
+let fallbackLock = false;
 
 type LockManagerLike = {
-  request<T>(
-    name: string,
-    options: { ifAvailable: true },
-    callback: (
-      lock: unknown | null,
-    ) => Promise<T | null>,
-  ): Promise<T | null>
-}
+	request<T>(
+		name: string,
+		options: { ifAvailable: true },
+		callback: (lock: unknown | null) => Promise<T | null>,
+	): Promise<T | null>;
+};
 
 export async function withTaskSyncLock<T>(
-  work: () => Promise<T>,
+	work: () => Promise<T>,
 ): Promise<T | null> {
-  const navigatorWithLocks = navigator as Navigator & {
-    locks?: LockManagerLike
-  }
+	const navigatorWithLocks = navigator as Navigator & {
+		locks?: LockManagerLike;
+	};
 
-  if (navigatorWithLocks.locks) {
-    return navigatorWithLocks.locks.request(
-      'personal-productivity-os:task-sync',
-      { ifAvailable: true },
-      async (lock) => {
-        if (!lock) {
-          return null
-        }
+	if (navigatorWithLocks.locks) {
+		return navigatorWithLocks.locks.request(
+			"personal-productivity-os:task-sync",
+			{ ifAvailable: true },
+			async (lock) => {
+				if (!lock) {
+					return null;
+				}
 
-        return work()
-      },
-    )
-  }
+				return work();
+			},
+		);
+	}
 
-  if (fallbackLock) {
-    return null
-  }
+	if (fallbackLock) {
+		return null;
+	}
 
-  fallbackLock = true
+	fallbackLock = true;
 
-  try {
-    return await work()
-  } finally {
-    fallbackLock = false
-  }
+	try {
+		return await work();
+	} finally {
+		fallbackLock = false;
+	}
 }

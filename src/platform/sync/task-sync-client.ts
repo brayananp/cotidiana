@@ -2,8 +2,7 @@ import type { TaskRecord } from "@/modules/tasks/infrastructure/local/task.recor
 import { registerCurrentDevice } from "@/platform/auth/device.functions";
 import { getLocalDatabase } from "@/platform/database/local-database";
 import { getNextRetryAt } from "./retry-policy";
-import { withTaskSyncLock } from "./sync-lock-client";
-import { taskSyncSnapshotSchema, type TaskSyncSnapshot } from "./sync.schemas";
+import { type TaskSyncSnapshot, taskSyncSnapshotSchema } from "./sync.schemas";
 import {
 	createSyncCursorId,
 	createSyncMetadataId,
@@ -12,6 +11,7 @@ import {
 	type PushOperationResult,
 	type SyncOperationRecord,
 } from "./sync.types";
+import { withTaskSyncLock } from "./sync-lock-client";
 import { pullTaskChangesFn, pushTaskOperationsFn } from "./task-sync.functions";
 
 const PUSH_BATCH_SIZE = 50;
@@ -19,6 +19,13 @@ const PULL_BATCH_SIZE = 100;
 const MAX_BATCHES_PER_RUN = 10;
 const registeredDevicesThisSession = new Set<string>();
 const STALE_PROCESSING_MS = 2 * 60_000;
+
+type PushTaskResponse = { results: PushOperationResult[] };
+type PullTaskResponse = {
+	changes: PullTaskChange[];
+	nextCursor: number;
+	hasMore: boolean;
+};
 
 export type RunTaskSyncInput = {
 	userId: string;
@@ -56,12 +63,12 @@ export async function runTaskSync(
 				}
 
 				try {
-					const response = await pushTaskOperationsFn({
+					const response = (await pushTaskOperationsFn({
 						data: {
 							deviceId: input.deviceId,
 							operations: operations.map(toPushInput),
 						},
-					});
+					})) as PushTaskResponse;
 
 					const summary = await applyPushResults(
 						input.userId,
@@ -82,13 +89,13 @@ export async function runTaskSync(
 			for (let batch = 0; batch < MAX_BATCHES_PER_RUN; batch += 1) {
 				const cursor = await getTaskCursor(input.userId);
 
-				const response = await pullTaskChangesFn({
+				const response = (await pullTaskChangesFn({
 					data: {
 						deviceId: input.deviceId,
 						cursor,
 						limit: PULL_BATCH_SIZE,
 					},
-				});
+				})) as PullTaskResponse;
 
 				const summary = await applyPullChanges(
 					input.userId,
@@ -367,7 +374,7 @@ async function applyPushResults(
 }
 
 async function applySuccessfulPush(
-	userId: string,
+	_userId: string,
 	claimed: SyncOperationRecord,
 	result: Extract<PushOperationResult, { status: "applied" }>,
 ): Promise<void> {
