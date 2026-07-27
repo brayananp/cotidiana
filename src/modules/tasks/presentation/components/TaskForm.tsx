@@ -1,9 +1,16 @@
 import { useForm } from "@tanstack/react-form";
 import type { ReactNode } from "react";
-
+import { isoToLocalDateTime } from "@/modules/tasks/application/date-mapper";
+import type { TaskExecutionContext } from "@/modules/tasks/application/task-context";
+import { TASK_PRIORITIES, type Task } from "@/modules/tasks/domain/task";
+import { tasksDependencies } from "@/modules/tasks/infrastructure/tasks.dependencies";
+import { taskPriorityLabels } from "@/modules/tasks/presentation/task-labels";
+import {
+	type TaskFormInput,
+	taskFormSchema,
+} from "@/modules/tasks/schemas/task-input.schema";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import { Textarea } from "@/shared/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -11,15 +18,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/shared/components/ui/select";
-import { isoToLocalDateTime } from "@/modules/tasks/application/date-mapper";
-import type { TaskExecutionContext } from "@/modules/tasks/application/task-context";
-import { TASK_PRIORITIES, type Task } from "@/modules/tasks/domain/task";
-import { tasksDependencies } from "@/modules/tasks/infrastructure/tasks.dependencies";
-import { taskPriorityLabels } from "@/modules/tasks/presentation/task-labels";
-import {
-	taskFormSchema,
-	type TaskFormInput,
-} from "@/modules/tasks/schemas/task-input.schema";
+import { Textarea } from "@/shared/components/ui/textarea";
 
 type TaskFormProps = {
 	context: TaskExecutionContext;
@@ -183,13 +182,13 @@ function FieldContainer({ label, errors, children }: FieldContainerProps) {
 	const errorMessage = errors.map(getErrorMessage).filter(Boolean).join(", ");
 
 	return (
-		<div className="space-y-2">
-			<label className="text-sm font-medium">{label}</label>
+		<label className="flex flex-col gap-2">
+			<span className="text-sm font-medium">{label}</span>
 			{children}
 			{errorMessage && (
 				<p className="text-sm text-destructive">{errorMessage}</p>
 			)}
-		</div>
+		</label>
 	);
 }
 

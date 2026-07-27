@@ -1,10 +1,11 @@
+import { and, asc, eq, gt, isNull } from "drizzle-orm";
 import {
 	type PullTasksInput,
 	type PushTaskOperationInput,
 	type PushTasksInput,
-	type TaskSyncSnapshot,
 	pullTasksInputSchema,
 	pushTasksInputSchema,
+	type TaskSyncSnapshot,
 	taskDeletePayloadSchema,
 	taskSyncSnapshotSchema,
 } from "@/platform/sync/sync.schemas";
@@ -12,8 +13,6 @@ import type {
 	PullTaskChange,
 	PushOperationResult,
 } from "@/platform/sync/sync.types";
-import { and, asc, eq, gt, isNull } from "drizzle-orm";
-
 import { requireServerSession } from "@/server/auth/require-session.server";
 import { db } from "@/server/database/client.server";
 import { device } from "@/server/database/schema/device.schema";
@@ -268,10 +267,11 @@ async function applyDelete(
 		version: remoteTask.version + 1,
 	};
 
+	const deletedAtValue = snapshot.deletedAt;
 	await transaction
 		.update(task)
 		.set({
-			deletedAt: new Date(snapshot.deletedAt!),
+			deletedAt: deletedAtValue ? new Date(deletedAtValue) : undefined,
 			updatedAt: now,
 			version: snapshot.version,
 		})
