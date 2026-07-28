@@ -1,7 +1,7 @@
 import type { Book } from "../../domain/book";
 import type { BookNote } from "../../domain/book-note";
-import type { BookNoteRecord } from "./book-note.record";
 import type { BookRecord } from "./book.record";
+import type { BookNoteRecord } from "./book-note.record";
 
 export function bookToRecord(book: Book): BookRecord {
 	return { ...book };

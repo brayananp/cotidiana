@@ -3,12 +3,13 @@ import type { BookNoteRecord } from "@/modules/library/infrastructure/local/book
 import type { ReminderRecord } from "@/modules/reminders/infrastructure/local/reminder.record";
 import type { CalendarEventRecord } from "@/modules/scheduling/infrastructure/local/calendar-event.record";
 import type { TimeBlockRecord } from "@/modules/scheduling/infrastructure/local/time-block.record";
+import type { UserSettingsRecord } from "@/modules/settings/infrastructure/local/user-settings.record";
 import type { TaskRecord } from "@/modules/tasks/infrastructure/local/task.record";
 import type { SyncMetadataRecord } from "@/platform/sync/sync.types";
 
 export const DATA_BACKUP_FORMAT = "personal-productivity-os-backup" as const;
 
-export const DATA_BACKUP_SCHEMA_VERSION = 1;
+export const DATA_BACKUP_SCHEMA_VERSION = 2 as const;
 
 export type BackupReason = "manual" | "before_import" | "before_restore";
 
@@ -28,6 +29,7 @@ export type DataBackupPayload = {
 		reminders: ReminderRecord[];
 		books: BookRecord[];
 		bookNotes: BookNoteRecord[];
+		userSettings: UserSettingsRecord[];
 	};
 
 	syncMetadata: SyncMetadataRecord[];
@@ -40,6 +42,7 @@ export type BackupDataCounts = {
 	reminders: number;
 	books: number;
 	bookNotes: number;
+	userSettings: number;
 	total: number;
 };
 
@@ -51,6 +54,7 @@ export function countBackupData(payload: DataBackupPayload): BackupDataCounts {
 		reminders: payload.data.reminders.length,
 		books: payload.data.books.length,
 		bookNotes: payload.data.bookNotes.length,
+		userSettings: payload.data.userSettings.length,
 	};
 
 	return {

@@ -6,7 +6,7 @@ import {
 	pushReminderOperationsFn,
 } from "./reminder-sync.functions";
 import { reminderSyncSnapshotSchema } from "./reminder-sync.schemas";
-import { withReminderSyncLock } from "./reminder-sync-lock.client";
+import { withReminderSyncLock } from "./reminder-sync-lock-client";
 import { getNextRetryAt } from "./retry-policy";
 import {
 	createSyncCursorId,

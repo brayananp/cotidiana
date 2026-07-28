@@ -2,6 +2,7 @@ import { getLocalDatabase } from "@/platform/database/local-database";
 import { requestLibrarySync } from "./library-sync-events-client";
 import { requestReminderSync } from "./reminder-sync-events-client";
 import { requestSchedulingSync } from "./scheduling-sync-events-client";
+import { requestSettingsSync } from "./settings-sync-events-client";
 import type { SyncEntityType, SyncOperationRecord } from "./sync.types";
 import {
 	deleteEntitySnapshot,
@@ -14,6 +15,7 @@ export function requestAllSync(): void {
 	requestSchedulingSync();
 	requestReminderSync();
 	requestLibrarySync();
+	requestSettingsSync();
 }
 
 export async function retryFailedOperations(userId: string): Promise<number> {
@@ -87,6 +89,7 @@ export async function discardRejectedOperation(
 			db.reminders,
 			db.books,
 			db.bookNotes,
+			db.userSettings,
 			db.syncOperations,
 			db.syncMetadata,
 			db.syncCursors,
@@ -144,6 +147,11 @@ export function requestSyncForEntity(entityType: SyncEntityType): void {
 
 	if (entityType === "book" || entityType === "book_note") {
 		requestLibrarySync();
+		return;
+	}
+
+	if (entityType === "user_settings") {
+		requestSettingsSync();
 	}
 }
 

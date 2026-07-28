@@ -22,10 +22,7 @@ export function BookCard({
 	const progress = calculateBookProgress(book);
 
 	return (
-		<Card
-			className={selected ? "border-primary" : ""}
-			size="sm"
-		>
+		<Card className={selected ? "border-primary" : ""} size="sm">
 			<Button
 				variant="ghost"
 				className="w-full justify-start px-0"
@@ -83,11 +80,7 @@ export function BookCard({
 					Editar
 				</Button>
 
-				<Button
-					variant="destructive"
-					size="xs"
-					onClick={onDelete}
-				>
+				<Button variant="destructive" size="xs" onClick={onDelete}>
 					Eliminar
 				</Button>
 			</div>

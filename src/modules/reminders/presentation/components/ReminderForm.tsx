@@ -77,9 +77,20 @@ type ReminderFormProps = {
 	onCompleted?: () => void;
 };
 
-// Tipo del formulario derivado directamente de useForm, sin funciones auxiliares
-// que invoquen hooks fuera de un componente o hook real.
-type ReminderFormApi = ReturnType<typeof useForm<ReminderFormInput>>;
+function useReminderFormApi(
+	defaultValues: ReminderFormInput,
+	onSubmit: (value: ReminderFormInput) => Promise<void>,
+) {
+	return useForm({
+		defaultValues,
+		validators: {
+			onSubmit: reminderFormSchema,
+		},
+		onSubmit: ({ value }) => onSubmit(value),
+	});
+}
+
+type ReminderFormApi = ReturnType<typeof useReminderFormApi>;
 
 export function ReminderForm({
 	context,
@@ -122,37 +133,25 @@ export function ReminderForm({
 		selectedTargetType,
 	);
 
-	const form = useForm({
-		defaultValues,
+	const form = useReminderFormApi(defaultValues, async (value) => {
+		setSubmitError(null);
 
-		validators: {
-			onSubmit: reminderFormSchema,
-		},
-
-		onSubmit: async ({ value }) => {
-			setSubmitError(null);
-
-			try {
-				if (reminder) {
-					await remindersDependencies.updateReminder(
-						reminder.id,
-						value,
-						context,
-					);
-				} else {
-					await remindersDependencies.createReminder(value, context);
-				}
-
-				form.reset();
-				onCompleted?.();
-			} catch (error) {
-				setSubmitError(
-					error instanceof Error
-						? error.message
-						: "No fue posible guardar el recordatorio.",
-				);
+		try {
+			if (reminder) {
+				await remindersDependencies.updateReminder(reminder.id, value, context);
+			} else {
+				await remindersDependencies.createReminder(value, context);
 			}
-		},
+
+			form.reset();
+			onCompleted?.();
+		} catch (error) {
+			setSubmitError(
+				error instanceof Error
+					? error.message
+					: "No fue posible guardar el recordatorio.",
+			);
+		}
 	});
 
 	// Reinicializa el formulario cuando cambia el recordatorio editado

@@ -7,7 +7,12 @@ import type {
 	SyncRuntimeState,
 } from "@/platform/sync/sync.types";
 
-export type SyncModuleKey = "tasks" | "scheduling" | "reminders" | "library";
+export type SyncModuleKey =
+	| "tasks"
+	| "scheduling"
+	| "reminders"
+	| "library"
+	| "settings";
 
 export type SyncModuleSnapshot = {
 	key: SyncModuleKey;
@@ -65,6 +70,11 @@ const MODULES: Array<{
 		key: "library",
 		label: "Biblioteca",
 		entityTypes: ["book", "book_note"],
+	},
+	{
+		key: "settings",
+		label: "Preferencias",
+		entityTypes: ["user_settings"],
 	},
 ];
 

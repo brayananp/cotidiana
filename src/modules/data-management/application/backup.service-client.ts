@@ -13,7 +13,7 @@ import type {
 import type { LocalBackupRecord } from "../infrastructure/local/local-backup.record";
 import { dataBackupPayloadSchema } from "../schemas/data-backup.schema";
 
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.10.0";
 const MAX_LOCAL_BACKUPS = 20;
 
 const DOMAIN_ENTITY_TYPES = [
@@ -23,6 +23,7 @@ const DOMAIN_ENTITY_TYPES = [
 	"reminder",
 	"book",
 	"book_note",
+	"user_settings",
 ] as const satisfies readonly SyncEntityType[];
 
 export async function createDataBackupPayload(
@@ -30,15 +31,23 @@ export async function createDataBackupPayload(
 ): Promise<DataBackupPayload> {
 	const db = getLocalDatabase();
 
-	const [tasks, timeBlocks, calendarEvents, reminders, books, bookNotes] =
-		await Promise.all([
-			db.tasks.where("userId").equals(userId).toArray(),
-			db.timeBlocks.where("userId").equals(userId).toArray(),
-			db.calendarEvents.where("userId").equals(userId).toArray(),
-			db.reminders.where("userId").equals(userId).toArray(),
-			db.books.where("userId").equals(userId).toArray(),
-			db.bookNotes.where("userId").equals(userId).toArray(),
-		]);
+	const [
+		tasks,
+		timeBlocks,
+		calendarEvents,
+		reminders,
+		books,
+		bookNotes,
+		userSettings,
+	] = await Promise.all([
+		db.tasks.where("userId").equals(userId).toArray(),
+		db.timeBlocks.where("userId").equals(userId).toArray(),
+		db.calendarEvents.where("userId").equals(userId).toArray(),
+		db.reminders.where("userId").equals(userId).toArray(),
+		db.books.where("userId").equals(userId).toArray(),
+		db.bookNotes.where("userId").equals(userId).toArray(),
+		db.userSettings.where("userId").equals(userId).toArray(),
+	]);
 
 	const entityKeys = new Set<string>();
 
@@ -66,6 +75,10 @@ export async function createDataBackupPayload(
 		entityKeys.add(`book_note:${item.id}`);
 	}
 
+	for (const item of userSettings) {
+		entityKeys.add(`user_settings:${item.id}`);
+	}
+
 	const allMetadata = await db.syncMetadata.toArray();
 
 	const syncMetadata = allMetadata.filter((metadata) =>
@@ -74,7 +87,7 @@ export async function createDataBackupPayload(
 
 	return dataBackupPayloadSchema.parse({
 		format: "personal-productivity-os-backup",
-		schemaVersion: 1,
+		schemaVersion: 2,
 		appVersion: APP_VERSION,
 		exportedAt: new Date().toISOString(),
 		sourceUserId: userId,
@@ -85,6 +98,7 @@ export async function createDataBackupPayload(
 			reminders,
 			books,
 			bookNotes,
+			userSettings,
 		},
 		syncMetadata,
 	});
@@ -181,10 +195,11 @@ export async function importDataBackup(input: {
 			db.reminders,
 			db.books,
 			db.bookNotes,
+			db.userSettings,
 			db.syncOperations,
 			db.syncMetadata,
-			db.syncCursors,
 			db.syncConflicts,
+			db.syncCursors,
 			db.syncRuntime,
 		],
 		async () => {
@@ -338,6 +353,10 @@ export async function importDataBackup(input: {
 			for (const note of payload.data.bookNotes) {
 				await processRecord("book_note", note);
 			}
+
+			for (const settings of payload.data.userSettings) {
+				await processRecord("user_settings", settings);
+			}
 		},
 	);
 
@@ -359,6 +378,7 @@ async function clearUserDomainData(userId: string): Promise<void> {
 		reminders,
 		books,
 		bookNotes,
+		userSettings,
 		operations,
 		conflicts,
 		cursors,
@@ -370,6 +390,7 @@ async function clearUserDomainData(userId: string): Promise<void> {
 		db.reminders.where("userId").equals(userId).toArray(),
 		db.books.where("userId").equals(userId).toArray(),
 		db.bookNotes.where("userId").equals(userId).toArray(),
+		db.userSettings.where("userId").equals(userId).toArray(),
 		db.syncOperations.where("userId").equals(userId).toArray(),
 		db.syncConflicts.where("userId").equals(userId).toArray(),
 		db.syncCursors.where("userId").equals(userId).toArray(),
@@ -385,6 +406,9 @@ async function clearUserDomainData(userId: string): Promise<void> {
 		...reminders.map((item) => createSyncMetadataId("reminder", item.id)),
 		...books.map((item) => createSyncMetadataId("book", item.id)),
 		...bookNotes.map((item) => createSyncMetadataId("book_note", item.id)),
+		...userSettings.map((item) =>
+			createSyncMetadataId("user_settings", item.id),
+		),
 		...operations
 			.filter((item) =>
 				DOMAIN_ENTITY_TYPES.includes(
@@ -408,6 +432,7 @@ async function clearUserDomainData(userId: string): Promise<void> {
 		db.reminders.bulkDelete(reminders.map((item) => item.id)),
 		db.books.bulkDelete(books.map((item) => item.id)),
 		db.bookNotes.bulkDelete(bookNotes.map((item) => item.id)),
+		db.userSettings.bulkDelete(userSettings.map((item) => item.id)),
 		db.syncOperations.bulkDelete(operations.map((item) => item.id)),
 		db.syncConflicts.bulkDelete(conflicts.map((item) => item.id)),
 		db.syncCursors.bulkDelete(cursors.map((item) => item.id)),
@@ -442,6 +467,8 @@ async function getDomainEntity(
 			return db.books.get(id);
 		case "book_note":
 			return db.bookNotes.get(id);
+		case "user_settings":
+			return db.userSettings.get(id);
 	}
 }
 
@@ -469,6 +496,9 @@ async function putDomainEntity(
 			return;
 		case "book_note":
 			await db.bookNotes.put(value as never);
+			return;
+		case "user_settings":
+			await db.userSettings.put(value as never);
 	}
 }
 
@@ -496,6 +526,9 @@ async function deleteDomainEntity(
 			return;
 		case "book_note":
 			await db.bookNotes.delete(id);
+			return;
+		case "user_settings":
+			await db.userSettings.delete(id);
 	}
 }
 

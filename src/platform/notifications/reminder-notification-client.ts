@@ -1,78 +1,58 @@
-import type { Reminder } from '@/modules/reminders/domain/reminder'
+import type { Reminder } from "@/modules/reminders/domain/reminder";
 
 export async function showReminderNotification(
-  reminder: Reminder,
+	reminder: Reminder,
 ): Promise<boolean> {
-  if (
-    typeof window === 'undefined' ||
-    !('Notification' in window) ||
-    Notification.permission !==
-      'granted'
-  ) {
-    return false
-  }
+	if (
+		typeof window === "undefined" ||
+		!("Notification" in window) ||
+		Notification.permission !== "granted"
+	) {
+		return false;
+	}
 
-  const options:
-    NotificationOptions = {
-    body:
-      reminder.notes ??
-      'Tienes un recordatorio pendiente.',
+	const options: NotificationOptions = {
+		body: reminder.notes ?? "Tienes un recordatorio pendiente.",
 
-    tag:
-      `reminder:${reminder.id}`,
+		tag: `reminder:${reminder.id}`,
 
-    // renotify: true ,
-    requireInteraction:
-      reminder.recurrence === 'none',
+		// renotify: true ,
+		requireInteraction: reminder.recurrence === "none",
 
-    icon: '/pwa-192x192.png',
-    badge: '/pwa-64x64.png',
+		icon: "/pwa-192x192.png",
+		badge: "/pwa-64x64.png",
 
-    data: {
-      reminderId: reminder.id,
-      url: '/reminders',
-    },
-  }
+		data: {
+			reminderId: reminder.id,
+			url: "/reminders",
+		},
+	};
 
-  if (
-    'serviceWorker' in navigator
-  ) {
-    try {
-      const registration =
-        await navigator
-          .serviceWorker.ready
+	if ("serviceWorker" in navigator) {
+		try {
+			const registration = await navigator.serviceWorker.ready;
 
-      await registration
-        .showNotification(
-          reminder.title,
-          options,
-        )
+			await registration.showNotification(reminder.title, options);
 
-      return true
-    } catch {
-      // Se utiliza el constructor de ventana como fallback.
-    }
-  }
+			return true;
+		} catch {
+			// Se utiliza el constructor de ventana como fallback.
+		}
+	}
 
-  try {
-    const notification =
-      new Notification(
-        reminder.title,
-        options,
-      )
+	try {
+		const notification = new Notification(reminder.title, options);
 
-    notification.onclick = () => {
-      window.focus()
+		notification.onclick = () => {
+			window.focus();
 
-      window.location.assign(
-        '/reminders',
-      )
+			window.location.assign("/reminders");
 
-      notification.close()
-    }
+			notification.close();
+		};
 
-    return true
-  } catch {
-    return false
-  }
+		return true;
+	} catch {
+		return false;
+	}
 }

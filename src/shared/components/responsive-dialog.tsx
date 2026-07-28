@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -14,7 +15,6 @@ import {
 } from "@/shared/components/ui/drawer";
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { cn } from "@/shared/lib/utils";
-import type { ReactNode } from "react";
 import { ScrollArea } from "./ui/scroll-area";
 
 type ResponsiveDialogProps = {

@@ -70,6 +70,7 @@ export async function resolveSyncConflict(
 			db.reminders,
 			db.books,
 			db.bookNotes,
+			db.userSettings,
 			db.syncOperations,
 			db.syncMetadata,
 			db.syncConflicts,
@@ -436,7 +437,7 @@ async function markMetadataSynced(
 async function markConflictResolved(
 	conflict: SyncConflictRecord,
 	resolution: ConflictResolution,
-	payload: Json,
+	payload: Json | null,
 ): Promise<void> {
 	await getLocalDatabase().syncConflicts.update(conflict.id, {
 		resolvedAt: new Date().toISOString(),

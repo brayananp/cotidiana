@@ -7,16 +7,19 @@ export const registerSchema = z
 			.trim()
 			.min(2, "El nombre debe tener al menos 2 caracteres")
 			.max(100, "El nombre es demasiado largo"),
-		email: z
 
-			.email("Ingresa un correo válido")
+		email: z
+			.string()
 			.trim()
 			.min(1, "El correo es obligatorio")
+			.email("Ingresa un correo válido")
 			.transform((value) => value.toLowerCase()),
+
 		password: z
 			.string()
-			.min(8, "La contraseña debe tener al menos 8 caracteres")
+			.min(12, "La contraseña debe tener al menos 12 caracteres")
 			.max(128, "La contraseña es demasiado larga"),
+
 		passwordConfirmation: z.string(),
 	})
 	.refine((value) => value.password === value.passwordConfirmation, {
@@ -25,4 +28,3 @@ export const registerSchema = z
 	});
 
 export type RegisterInput = z.input<typeof registerSchema>;
-export type RegisterValues = z.output<typeof registerSchema>;

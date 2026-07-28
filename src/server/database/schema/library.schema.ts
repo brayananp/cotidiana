@@ -1,5 +1,4 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-
 import { user } from "./auth.schema";
 
 const timestamp = (name: string) =>

@@ -8,11 +8,11 @@ import {
 	calendarEventSyncSnapshotSchema,
 	timeBlockSyncSnapshotSchema,
 } from "@/platform/sync/scheduling-sync.schemas";
+import { userSettingsSyncSnapshotSchema } from "@/platform/sync/settings-sync.schemas";
 import { taskSyncSnapshotSchema } from "@/platform/sync/sync.schemas";
 
 const syncMetadataSchema = z.object({
 	id: z.string().min(1),
-
 	entityType: z.enum([
 		"task",
 		"time_block",
@@ -22,42 +22,63 @@ const syncMetadataSchema = z.object({
 		"book_note",
 		"user_settings",
 	]),
-
 	entityId: z.string().min(1),
 	localVersion: z.number().int().positive(),
 	remoteVersion: z.number().int().positive().nullable(),
-
 	state: z.enum(["synced", "pending", "failed", "conflict"]),
-
 	lastSyncedAt: z.string().datetime().nullable(),
-
 	lastError: z.string().nullable(),
 	updatedAt: z.string().datetime(),
 });
 
-export const dataBackupPayloadSchema = z.object({
+const common = {
 	format: z.literal("personal-productivity-os-backup"),
-
-	schemaVersion: z.literal(1),
 	appVersion: z.string().min(1),
 	exportedAt: z.string().datetime(),
 	sourceUserId: z.string().min(1),
-
-	data: z.object({
-		tasks: z.array(taskSyncSnapshotSchema),
-
-		timeBlocks: z.array(timeBlockSyncSnapshotSchema),
-
-		calendarEvents: z.array(calendarEventSyncSnapshotSchema),
-
-		reminders: z.array(reminderSyncSnapshotSchema),
-
-		books: z.array(bookSyncSnapshotSchema),
-
-		bookNotes: z.array(bookNoteSyncSnapshotSchema),
-	}),
-
 	syncMetadata: z.array(syncMetadataSchema),
+};
+
+const dataV1 = z.object({
+	tasks: z.array(taskSyncSnapshotSchema),
+	timeBlocks: z.array(timeBlockSyncSnapshotSchema),
+	calendarEvents: z.array(calendarEventSyncSnapshotSchema),
+	reminders: z.array(reminderSyncSnapshotSchema),
+	books: z.array(bookSyncSnapshotSchema),
+	bookNotes: z.array(bookNoteSyncSnapshotSchema),
 });
+
+const dataV2 = dataV1.extend({
+	userSettings: z.array(userSettingsSyncSnapshotSchema),
+});
+
+const backupV1Schema = z.object({
+	...common,
+	schemaVersion: z.literal(1),
+	data: dataV1,
+});
+
+const backupV2Schema = z.object({
+	...common,
+	schemaVersion: z.literal(2),
+	data: dataV2,
+});
+
+export const dataBackupPayloadSchema = z
+	.union([backupV2Schema, backupV1Schema])
+	.transform((payload) => {
+		if (payload.schemaVersion === 2) {
+			return payload;
+		}
+
+		return {
+			...payload,
+			schemaVersion: 2 as const,
+			data: {
+				...payload.data,
+				userSettings: [],
+			},
+		};
+	});
 
 export type ParsedDataBackup = z.infer<typeof dataBackupPayloadSchema>;

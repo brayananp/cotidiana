@@ -14,6 +14,9 @@ export const auth = betterAuth({
 	}),
 	emailAndPassword: {
 		enabled: true,
+		minPasswordLength: 12,
+		maxPasswordLength: 128,
+		revokeSessionsOnPasswordReset: true,
 	},
 	advanced: {
 		database: {
@@ -23,3 +26,5 @@ export const auth = betterAuth({
 	trustedOrigins: [process.env.APP_ORIGIN ?? "http://localhost:3000"],
 	plugins: [tanstackStartCookies()],
 });
+
+export type ServerAuthSession = typeof auth.$Infer.Session;

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { BeforeInstallPromptEvent } from "./pwa.types";
 import {
 	initializePwaState,
 	markPwaInstalled,
@@ -8,7 +9,6 @@ import {
 	setPwaError,
 	setWaitingWorker,
 } from "./pwa-state-client";
-import type { BeforeInstallPromptEvent } from "./pwa.types";
 
 const UPDATE_INTERVAL_MS = 60 * 60_000;
 

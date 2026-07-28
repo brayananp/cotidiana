@@ -318,7 +318,8 @@ function BackupCounts({ payload }: { payload: DataBackupPayload }) {
 		<p className="mt-1 text-xs text-muted-foreground">
 			{counts.tasks} tareas · {counts.timeBlocks} bloques ·{" "}
 			{counts.calendarEvents} eventos · {counts.reminders} recordatorios ·{" "}
-			{counts.books} libros · {counts.bookNotes} notas
+			{counts.books} libros · {counts.bookNotes} notas · {counts.userSettings}{" "}
+			preferencias
 		</p>
 	);
 }

@@ -1,4 +1,5 @@
 import { ResponsiveDialog } from "#/shared/components/responsive-dialog";
+import { useState } from "react";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -8,7 +9,6 @@ import {
 	CardTitle,
 } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
-import { useState } from "react";
 import type { LibraryExecutionContext } from "../../application/library-context";
 import type { Book } from "../../domain/book";
 import type { BookNote } from "../../domain/book-note";

@@ -3,6 +3,7 @@ import type { BookNoteRecord } from "@/modules/library/infrastructure/local/book
 import type { ReminderRecord } from "@/modules/reminders/infrastructure/local/reminder.record";
 import type { CalendarEventRecord } from "@/modules/scheduling/infrastructure/local/calendar-event.record";
 import type { TimeBlockRecord } from "@/modules/scheduling/infrastructure/local/time-block.record";
+import type { UserSettingsRecord } from "@/modules/settings/infrastructure/local/user-settings.record";
 import type { TaskRecord } from "@/modules/tasks/infrastructure/local/task.record";
 import { getLocalDatabase } from "@/platform/database/local-database";
 import {
@@ -14,10 +15,11 @@ import {
 	calendarEventSyncSnapshotSchema,
 	timeBlockSyncSnapshotSchema,
 } from "./scheduling-sync.schemas";
+import { userSettingsSyncSnapshotSchema } from "./settings-sync.schemas";
 import { taskSyncSnapshotSchema } from "./sync.schemas";
 import type { Json, SyncEntityType } from "./sync.types";
 
-export type DomainSyncEntityType = Exclude<SyncEntityType, "user_settings">;
+export type DomainSyncEntityType = SyncEntityType;
 
 export type EntitySnapshot = Record<string, Json> & {
 	id: string;
@@ -37,7 +39,8 @@ export function isDomainSyncEntityType(
 		value === "calendar_event" ||
 		value === "reminder" ||
 		value === "book" ||
-		value === "book_note"
+		value === "book_note" ||
+		value === "user_settings"
 	);
 }
 
@@ -63,6 +66,8 @@ export function parseEntitySnapshot(
 
 		case "book_note":
 			return bookNoteSyncSnapshotSchema.parse(payload) as EntitySnapshot;
+		case "user_settings":
+			return userSettingsSyncSnapshotSchema.parse(payload) as EntitySnapshot;
 	}
 }
 
@@ -86,6 +91,8 @@ export async function getEntitySnapshot(
 				return db.books.get(id);
 			case "book_note":
 				return db.bookNotes.get(id);
+			case "user_settings":
+				return db.userSettings.get(id);
 		}
 	})();
 
@@ -121,6 +128,10 @@ export async function putEntitySnapshot(
 
 		case "book_note":
 			await db.bookNotes.put(snapshot as BookNoteRecord);
+			return;
+		case "user_settings":
+			await db.userSettings.put(snapshot as UserSettingsRecord);
+			return;
 	}
 }
 
@@ -148,6 +159,10 @@ export async function deleteEntitySnapshot(
 			return;
 		case "book_note":
 			await db.bookNotes.delete(id);
+			return;
+		case "user_settings":
+			await db.userSettings.delete(id);
+			return;
 	}
 }
 
@@ -157,6 +172,9 @@ export function cloneEntitySnapshot(
 	userId: string,
 	now = new Date(),
 ): EntitySnapshot {
+	if (entityType === "user_settings") {
+		throw new Error("USER_SETTINGS_CANNOT_BE_DUPLICATED");
+	}
 	const timestamp = now.toISOString();
 
 	const clone: EntitySnapshot = {

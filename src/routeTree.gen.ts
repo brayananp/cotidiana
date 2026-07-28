@@ -21,6 +21,8 @@ import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as AppSettingsPreferencesRouteImport } from './routes/_app/settings/preferences'
+import { Route as AppSettingsSecurityRouteImport } from './routes/_app/settings/security'
 import { Route as AppSettingsSyncRouteImport } from './routes/_app/settings/sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -82,6 +84,16 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppSettingsPreferencesRoute = AppSettingsPreferencesRouteImport.update({
+  id: '/preferences',
+  path: '/preferences',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
+const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
 const AppSettingsSyncRoute = AppSettingsSyncRouteImport.update({
   id: '/sync',
   path: '/sync',
@@ -104,6 +116,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/api/health': typeof ApiHealthRoute
+  '/settings/preferences': typeof AppSettingsPreferencesRoute
+  '/settings/security': typeof AppSettingsSecurityRoute
   '/settings/sync': typeof AppSettingsSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -118,6 +132,8 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/api/health': typeof ApiHealthRoute
+  '/settings/preferences': typeof AppSettingsPreferencesRoute
+  '/settings/security': typeof AppSettingsSecurityRoute
   '/settings/sync': typeof AppSettingsSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -135,6 +151,8 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/api/health': typeof ApiHealthRoute
+  '/_app/settings/preferences': typeof AppSettingsPreferencesRoute
+  '/_app/settings/security': typeof AppSettingsSecurityRoute
   '/_app/settings/sync': typeof AppSettingsSyncRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -151,6 +169,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/api/health'
+    | '/settings/preferences'
+    | '/settings/security'
     | '/settings/sync'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -165,6 +185,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/api/health'
+    | '/settings/preferences'
+    | '/settings/security'
     | '/settings/sync'
     | '/api/auth/$'
   id:
@@ -181,6 +203,8 @@ export interface FileRouteTypes {
     | '/_auth/login'
     | '/_auth/register'
     | '/api/health'
+    | '/_app/settings/preferences'
+    | '/_app/settings/security'
     | '/_app/settings/sync'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -279,6 +303,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/settings/preferences': {
+      id: '/_app/settings/preferences'
+      path: '/preferences'
+      fullPath: '/settings/preferences'
+      preLoaderRoute: typeof AppSettingsPreferencesRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/settings/security': {
+      id: '/_app/settings/security'
+      path: '/security'
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof AppSettingsSecurityRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
     '/_app/settings/sync': {
       id: '/_app/settings/sync'
       path: '/sync'
@@ -297,10 +335,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppSettingsRouteRouteChildren {
+  AppSettingsPreferencesRoute: typeof AppSettingsPreferencesRoute
+  AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
   AppSettingsSyncRoute: typeof AppSettingsSyncRoute
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
+  AppSettingsPreferencesRoute: AppSettingsPreferencesRoute,
+  AppSettingsSecurityRoute: AppSettingsSecurityRoute,
   AppSettingsSyncRoute: AppSettingsSyncRoute,
 }
 

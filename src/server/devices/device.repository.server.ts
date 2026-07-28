@@ -1,5 +1,8 @@
-import type { RegisterDeviceInput } from "#/platform/auth/device.schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
+import type {
+	RegisterDeviceInput,
+	RenameDeviceInput,
+} from "@/platform/auth/device.schema";
 import { db } from "@/server/database/client.server";
 import { device } from "@/server/database/schema/device.schema";
 
@@ -19,6 +22,10 @@ export async function registerDeviceForUser(
 		throw new Error("DEVICE_ID_ALREADY_ASSIGNED");
 	}
 
+	if (existing?.revokedAt) {
+		throw new Error("DEVICE_REVOKED");
+	}
+
 	if (existing) {
 		const [updated] = await db
 			.update(device)
@@ -27,7 +34,6 @@ export async function registerDeviceForUser(
 				platform: input.platform,
 				lastSeenAt: now,
 				updatedAt: now,
-				revokedAt: null,
 			})
 			.where(and(eq(device.id, input.deviceId), eq(device.userId, userId)))
 			.returning();
@@ -56,4 +62,51 @@ export async function registerDeviceForUser(
 	}
 
 	return created;
+}
+
+export function listDevicesForUser(userId: string) {
+	return db
+		.select()
+		.from(device)
+		.where(eq(device.userId, userId))
+		.orderBy(desc(device.lastSeenAt));
+}
+
+export async function renameDeviceForUser(
+	userId: string,
+	input: RenameDeviceInput,
+) {
+	const [updated] = await db
+		.update(device)
+		.set({
+			name: input.name,
+			updatedAt: new Date(),
+		})
+		.where(and(eq(device.id, input.deviceId), eq(device.userId, userId)))
+		.returning();
+
+	if (!updated) {
+		throw new Error("DEVICE_NOT_FOUND");
+	}
+
+	return updated;
+}
+
+export async function revokeDeviceForUser(userId: string, deviceId: string) {
+	const now = new Date();
+
+	const [revoked] = await db
+		.update(device)
+		.set({
+			revokedAt: now,
+			updatedAt: now,
+		})
+		.where(and(eq(device.id, deviceId), eq(device.userId, userId)))
+		.returning();
+
+	if (!revoked) {
+		throw new Error("DEVICE_NOT_FOUND");
+	}
+
+	return revoked;
 }

@@ -168,12 +168,14 @@ export function ConflictCard({
 							onClick={() => void resolve("keep_local")}
 						/>
 
-						<ResolutionButton
-							label="Duplicar local"
-							busy={busy === "duplicate_local"}
-							disabled={busy !== null}
-							onClick={() => void resolve("duplicate_local")}
-						/>
+						{conflict.entityType !== "user_settings" && (
+							<ResolutionButton
+								label="Duplicar local"
+								busy={busy === "duplicate_local"}
+								disabled={busy !== null}
+								onClick={() => void resolve("duplicate_local")}
+							/>
+						)}
 					</>
 				)}
 

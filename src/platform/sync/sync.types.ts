@@ -174,6 +174,16 @@ export type PullLibraryChange = {
 	payload: Json;
 	createdAt: string;
 };
+
+export type PullSettingsChange = {
+	sequence: number;
+	entityType: "user_settings";
+	entityId: string;
+	operation: SyncOperationType;
+	version: number;
+	payload: Json;
+	createdAt: string;
+};
 export function createSyncMetadataId(
 	entityType: SyncEntityType,
 	entityId: string,

@@ -7,8 +7,8 @@ import { updateBookNoteCommand } from "../application/commands/update-book-note"
 import { updateBookProgressCommand } from "../application/commands/update-book-progress";
 import { listBookNotesQuery } from "../application/queries/list-book-notes";
 import { listBooksQuery } from "../application/queries/list-books";
-import { DexieLibraryWriteStore } from "./local/dexie-library-write-store";
 import { DexieLibraryRepository } from "./local/dexie-library.repository";
+import { DexieLibraryWriteStore } from "./local/dexie-library-write-store";
 
 const repository = new DexieLibraryRepository();
 

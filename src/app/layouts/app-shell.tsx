@@ -1,5 +1,18 @@
+import { AppLockGate } from "#/modules/security";
 import { authClient } from "#/platform/auth/auth-client";
+import { subscribeToNetworkChanges } from "#/platform/network/network-status";
+import { ReminderSchedulerBootstrap } from "#/platform/notifications/ReminderSchedulerBootstrap";
 import { PwaBootstrap, PwaUpdatePrompt } from "#/platform/pwa";
+import { TaskSyncBootstrap } from "#/platform/sync";
+import { LibrarySyncBootstrap } from "#/platform/sync/LibrarySyncBootstrap";
+import { ReminderSyncBootstrap } from "#/platform/sync/ReminderSyncBootstrap";
+import { SchedulingSyncBootstrap } from "#/platform/sync/SchedulingSyncBootstrap";
+import { SettingsSyncBootstrap } from "#/platform/sync/SettingsSyncBootstrap";
+import { LibrarySyncStatus } from "#/shared/components/LibrarySyncStatus";
+import { ReminderSyncStatus } from "#/shared/components/ReminderSyncStatus";
+import { SchedulingSyncStatus } from "#/shared/components/SchedulingSyncStatus";
+import { SettingsSyncStatus } from "#/shared/components/SettingsSyncStatus";
+import { TaskSyncStatus } from "#/shared/components/TaskSyncStatus";
 import { MenuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -7,9 +20,9 @@ import {
 	Outlet,
 	useNavigate,
 	useRouteContext,
+	useRouter,
 } from "@tanstack/react-router";
-import { useState } from "react";
-import { TaskSyncStatus } from "@/shared/components/TaskSyncStatus";
+import { useEffect, useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import {
 	DropdownMenu,
@@ -39,15 +52,22 @@ const navItems = [
 
 export function AppShell() {
 	const navigate = useNavigate();
+	const router = useRouter();
+
 	const { data: session, isPending } = authClient.useSession();
 	const [mobileOpen, setMobileOpen] = useState(false);
-	const handleSignOut = async () => {
-		await authClient.signOut();
-		await navigate({ to: "/login", replace: true });
-	};
+
 	const { access } = useRouteContext({
 		from: "/_app",
 	});
+
+	useEffect(
+		() =>
+			subscribeToNetworkChanges(() => {
+				void router.invalidate();
+			}),
+		[router],
+	);
 	const NavLinks = ({ onClick }: { onClick?: () => void }) => (
 		<>
 			{navItems.map((item) => (
@@ -63,115 +83,133 @@ export function AppShell() {
 			))}
 		</>
 	);
-
+	const handleSignOut = async () => {
+		await authClient.signOut();
+		await navigate({ to: "/login", replace: true });
+	};
 	return (
-		<div className="relative flex min-h-dvh flex-col">
-			<header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
-				<div className="flex items-center gap-6">
-					<Link
-						to="/dashboard"
-						className="text-base font-semibold tracking-tight"
-					>
-						Cotidiana
-					</Link>
-					<nav className="hidden items-center gap-5 md:flex">
-						<NavLinks />
-					</nav>
-				</div>
+		<>
+			<PwaBootstrap />
+			<TaskSyncBootstrap access={access} />
+			<SchedulingSyncBootstrap access={access} />
+			<ReminderSyncBootstrap access={access} />
+			<ReminderSchedulerBootstrap access={access} />
+			<LibrarySyncBootstrap access={access} />
+			<SettingsSyncBootstrap access={access} />
 
-				<div className="flex items-center gap-2">
-					<TaskSyncStatus userId={session?.user.id} />
-					<PwaBootstrap />
-					<PwaUpdatePrompt />
-					<AccessBanner mode={access.mode} />
+			<AppLockGate access={access}>
+				<div className="relative flex min-h-dvh flex-col">
+					<header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
+						<div className="flex items-center gap-6">
+							<Link
+								to="/dashboard"
+								className="text-base font-semibold tracking-tight"
+							>
+								Cotidiana
+							</Link>
+							<nav className="hidden items-center gap-5 md:flex">
+								<NavLinks />
+							</nav>
+						</div>
 
-					{isPending ? (
-						<div className="h-8 w-20 animate-pulse rounded-2xl bg-muted" />
-					) : session ? (
-						<DropdownMenu>
-							<DropdownMenuTrigger
-								render={
-									<Button variant="ghost" size="sm" className="gap-2">
-										<div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-											{session.user.name?.charAt(0).toUpperCase() ?? "U"}
-										</div>
-										<span className="hidden text-sm sm:inline">
-											{session.user.name}
-										</span>
-									</Button>
-								}
-							/>
-							<DropdownMenuContent align="end" className="w-48">
-								<DropdownMenuGroup>
-									<DropdownMenuLabel className="font-normal">
-										<div className="flex flex-col gap-1">
-											<span className="font-medium text-foreground">
-												{session.user.name}
-											</span>
-											<span className="text-xs text-muted-foreground">
-												{session.user.email}
-											</span>
-										</div>
-									</DropdownMenuLabel>
-								</DropdownMenuGroup>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									render={
-										<Link to="/settings/sync">
-											{/* <SettingsIcon className="mr-2 h-4 w-4" /> */}
-											<span>Configuración</span>
-										</Link>
-									}
-								></DropdownMenuItem>
-								<DropdownMenuItem onClick={() => void handleSignOut()}>
-									Cerrar sesión
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					) : null}
+						<div className="flex items-center gap-2">
+							<PwaUpdatePrompt />
+							<TaskSyncStatus userId={session?.user.id} />
+							<SchedulingSyncStatus userId={session?.user.id} />
+							<ReminderSyncStatus userId={session?.user.id} />
+							<LibrarySyncStatus userId={session?.user.id} />
+							<SettingsSyncStatus userId={session?.user.id} />
+							<AccessBanner mode={access.mode} />
 
-					<Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-						<SheetTrigger
-							render={
-								<Button variant="ghost" size="icon" className="md:hidden">
-									<HugeiconsIcon icon={MenuIcon} size={20} />
-								</Button>
-							}
-						/>
-						<SheetContent side="right">
-							<SheetHeader>
-								<SheetTitle>Cotidiana</SheetTitle>
-							</SheetHeader>
-							<div className="mt-6 flex flex-col gap-4 px-2">
-								<NavLinks onClick={() => setMobileOpen(false)} />
-								<Separator />
-								{session && (
-									<div className="flex flex-col gap-2">
-										<span className="text-sm text-muted-foreground">
-											{session.user.email}
-										</span>
-										<Button
-											variant="destructive"
-											size="sm"
-											onClick={() => {
-												setMobileOpen(false);
-												void handleSignOut();
-											}}
-										>
+							{isPending ? (
+								<div className="h-8 w-20 animate-pulse rounded-2xl bg-muted" />
+							) : session ? (
+								<DropdownMenu>
+									<DropdownMenuTrigger
+										render={
+											<Button variant="ghost" size="sm" className="gap-2">
+												<div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+													{session.user.name?.charAt(0).toUpperCase() ?? "U"}
+												</div>
+												<span className="hidden text-sm sm:inline">
+													{session.user.name}
+												</span>
+											</Button>
+										}
+									/>
+									<DropdownMenuContent align="end" className="w-48">
+										<DropdownMenuGroup>
+											<DropdownMenuLabel className="font-normal">
+												<div className="flex flex-col gap-1">
+													<span className="font-medium text-foreground">
+														{session.user.name}
+													</span>
+													<span className="text-xs text-muted-foreground">
+														{session.user.email}
+													</span>
+												</div>
+											</DropdownMenuLabel>
+										</DropdownMenuGroup>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											render={
+												<Link to="/settings/sync">
+													{/* <SettingsIcon className="mr-2 h-4 w-4" /> */}
+													<span>Configuración</span>
+												</Link>
+											}
+										></DropdownMenuItem>
+										<DropdownMenuItem onClick={() => void handleSignOut()}>
 											Cerrar sesión
-										</Button>
-									</div>
-								)}
-							</div>
-						</SheetContent>
-					</Sheet>
-				</div>
-			</header>
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							) : null}
 
-			<main className="flex-1 px-4 py-6 sm:px-6">
-				<Outlet />
-			</main>
-		</div>
+							<Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+								<SheetTrigger
+									render={
+										<Button variant="ghost" size="icon" className="md:hidden">
+											<HugeiconsIcon icon={MenuIcon} size={20} />
+										</Button>
+									}
+								/>
+								<SheetContent side="right">
+									<SheetHeader>
+										<SheetTitle>Cotidiana</SheetTitle>
+									</SheetHeader>
+									<div className="mt-6 flex flex-col gap-4 px-2">
+										<NavLinks onClick={() => setMobileOpen(false)} />
+										<Separator />
+										{session && (
+											<div className="flex flex-col gap-2">
+												<span className="text-sm text-muted-foreground">
+													{session.user.email}
+												</span>
+												<Button
+													variant="destructive"
+													size="sm"
+													onClick={() => {
+														setMobileOpen(false);
+														void handleSignOut();
+													}}
+												>
+													Cerrar sesión
+												</Button>
+											</div>
+										)}
+									</div>
+								</SheetContent>
+							</Sheet>
+						</div>
+					</header>
+
+					<main className="flex-1 px-4 py-6 sm:px-6">
+						<Outlet />
+					</main>
+				</div>
+			</AppLockGate>
+		</>
 	);
 }
 

@@ -1,3 +1,5 @@
+import { useForm } from "@tanstack/react-form";
+import { useState } from "react";
 import { Alert } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
@@ -16,8 +18,6 @@ import {
 	SelectValue,
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { useForm } from "@tanstack/react-form";
-import { useState } from "react";
 import type { LibraryExecutionContext } from "../../application/library-context";
 import { BOOK_STATUSES, type Book } from "../../domain/book";
 import { libraryDependencies } from "../../infrastructure/library.dependencies";
@@ -31,17 +31,9 @@ type BookFormProps = {
 	context: LibraryExecutionContext;
 	book?: Book | null;
 	onCompleted?: () => void;
-	isOpen?: boolean;
-	onOpenChange?: (open: boolean) => void;
 };
 
-export function BookForm({
-	context,
-	book,
-	onCompleted,
-	isOpen,
-	onOpenChange,
-}: BookFormProps) {
+export function BookForm({ context, book, onCompleted }: BookFormProps) {
 	const [submitError, setSubmitError] = useState<string | null>(null);
 
 	const defaultValues: BookFormInput = {
