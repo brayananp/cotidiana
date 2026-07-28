@@ -13,7 +13,8 @@ export type SyncEntityType =
 	| "reminder"
 	| "book"
 	| "book_note"
-	| "user_settings";
+	| "user_settings"
+	| "daily_review";
 
 export type SyncOperationType = "create" | "update" | "delete";
 
@@ -184,6 +185,17 @@ export type PullSettingsChange = {
 	payload: Json;
 	createdAt: string;
 };
+
+export type PullDailyReviewChange = {
+	sequence: number;
+	entityType: "daily_review";
+	entityId: string;
+	operation: SyncOperationType;
+	version: number;
+	payload: Json;
+	createdAt: string;
+};
+
 export function createSyncMetadataId(
 	entityType: SyncEntityType,
 	entityId: string,

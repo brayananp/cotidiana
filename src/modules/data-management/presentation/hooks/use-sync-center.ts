@@ -12,7 +12,8 @@ export type SyncModuleKey =
 	| "scheduling"
 	| "reminders"
 	| "library"
-	| "settings";
+	| "settings"
+	| "reviews";
 
 export type SyncModuleSnapshot = {
 	key: SyncModuleKey;
@@ -75,6 +76,11 @@ const MODULES: Array<{
 		key: "settings",
 		label: "Preferencias",
 		entityTypes: ["user_settings"],
+	},
+	{
+		key: "reviews",
+		label: "Revisión diaria",
+		entityTypes: ["daily_review"],
 	},
 ];
 

@@ -1,4 +1,5 @@
 import { getLocalDatabase } from "@/platform/database/local-database";
+import { requestDailyReviewSync } from "./daily-review-sync-events-client";
 import { requestLibrarySync } from "./library-sync-events-client";
 import { requestReminderSync } from "./reminder-sync-events-client";
 import { requestSchedulingSync } from "./scheduling-sync-events-client";
@@ -16,6 +17,7 @@ export function requestAllSync(): void {
 	requestReminderSync();
 	requestLibrarySync();
 	requestSettingsSync();
+	requestDailyReviewSync();
 }
 
 export async function retryFailedOperations(userId: string): Promise<number> {
@@ -90,6 +92,7 @@ export async function discardRejectedOperation(
 			db.books,
 			db.bookNotes,
 			db.userSettings,
+			db.dailyReviews,
 			db.syncOperations,
 			db.syncMetadata,
 			db.syncCursors,
@@ -152,6 +155,11 @@ export function requestSyncForEntity(entityType: SyncEntityType): void {
 
 	if (entityType === "user_settings") {
 		requestSettingsSync();
+		return;
+	}
+
+	if (entityType === "daily_review") {
+		requestDailyReviewSync();
 	}
 }
 

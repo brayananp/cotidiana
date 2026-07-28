@@ -1,4 +1,5 @@
 export type {
+	PullDailyReviewChange,
 	PullLibraryChange,
 	PullTaskChange,
 	PushOperationResult,

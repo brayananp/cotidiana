@@ -319,7 +319,7 @@ function BackupCounts({ payload }: { payload: DataBackupPayload }) {
 			{counts.tasks} tareas · {counts.timeBlocks} bloques ·{" "}
 			{counts.calendarEvents} eventos · {counts.reminders} recordatorios ·{" "}
 			{counts.books} libros · {counts.bookNotes} notas · {counts.userSettings}{" "}
-			preferencias
+			preferencias · {counts.dailyReviews} revisiones
 		</p>
 	);
 }

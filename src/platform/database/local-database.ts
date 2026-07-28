@@ -3,6 +3,7 @@ import type { BookRecord } from "#/modules/library/infrastructure/local/book.rec
 import type { BookNoteRecord } from "#/modules/library/infrastructure/local/book-note.record";
 import type { ReminderRecord } from "#/modules/reminders/infrastructure/local/reminder.record";
 import Dexie, { type EntityTable } from "dexie";
+import type { DailyReviewRecord } from "@/modules/dashboard/infrastructure/local/daily-review.record";
 import type { CalendarEventRecord } from "@/modules/scheduling/infrastructure/local/calendar-event.record";
 import type { TimeBlockRecord } from "@/modules/scheduling/infrastructure/local/time-block.record";
 import type { LocalSecurityProfileRecord } from "@/modules/security/infrastructure/local/local-security.record";
@@ -58,6 +59,7 @@ export class ProductivityLocalDatabase extends Dexie {
 	localBackups!: EntityTable<LocalBackupRecord, "id">;
 	localSecurityProfiles!: EntityTable<LocalSecurityProfileRecord, "id">;
 	userSettings!: EntityTable<UserSettingsRecord, "id">;
+	dailyReviews!: EntityTable<DailyReviewRecord, "id">;
 	syncOperations!: EntityTable<SyncOperationRecord, "id">;
 	syncMetadata!: EntityTable<SyncMetadataRecord, "id">;
 	syncCursors!: EntityTable<SyncCursorRecord, "id">;
@@ -267,6 +269,10 @@ export class ProductivityLocalDatabase extends Dexie {
 				"id, userId, entityType, entityId, createdAt, resolvedAt, [entityType+entityId], [userId+resolvedAt]",
 			syncRuntime:
 				"id, userId, entityType, state, updatedAt, [userId+entityType]",
+		});
+		this.version(10).stores({
+			dailyReviews:
+				"id, userId, reviewDate, completedAt, updatedAt, deletedAt, [userId+reviewDate], [userId+updatedAt]",
 		});
 	}
 }

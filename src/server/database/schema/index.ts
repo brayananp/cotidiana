@@ -1,4 +1,5 @@
 export * from "./auth.schema";
+export * from "./daily-review.schema";
 export * from "./device.schema";
 export * from "./library.schema";
 export * from "./reminder.schema";

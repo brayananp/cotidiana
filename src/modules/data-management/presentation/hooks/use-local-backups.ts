@@ -1,5 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { getLocalDatabase } from "@/platform/database/local-database";
+import { dataBackupPayloadSchema } from "../../schemas/data-backup.schema";
 
 export function useLocalBackups(userId: string) {
 	return useLiveQuery(
@@ -9,9 +10,12 @@ export function useLocalBackups(userId: string) {
 				.equals(userId)
 				.toArray();
 
-			return backups.sort((left, right) =>
-				right.createdAt.localeCompare(left.createdAt),
-			);
+			return backups
+				.map((backup) => ({
+					...backup,
+					payload: dataBackupPayloadSchema.parse(backup.payload),
+				}))
+				.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 		},
 		[userId],
 		[],

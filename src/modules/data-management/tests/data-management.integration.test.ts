@@ -238,7 +238,7 @@ function createTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
 function createBackupPayload(tasks: TaskRecord[]): DataBackupPayload {
 	return {
 		format: "personal-productivity-os-backup",
-		schemaVersion: 2,
+		schemaVersion: 3,
 		appVersion: "1.9.0",
 		exportedAt: NOW,
 		sourceUserId: USER_ID,
@@ -250,6 +250,7 @@ function createBackupPayload(tasks: TaskRecord[]): DataBackupPayload {
 			books: [],
 			bookNotes: [],
 			userSettings: [],
+			dailyReviews: [],
 		},
 		syncMetadata: [],
 	};

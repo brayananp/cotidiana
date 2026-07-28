@@ -109,7 +109,7 @@ import { build as viteBuild } from 'vite'
   
         rollupOptions: {
           output: {
-            inlineDynamicImports: true,
+            codeSplitting: false,
             entryFileNames: 'sw.js',
           },
         },
@@ -351,4 +351,3 @@ import { build as viteBuild } from 'vite'
     console.error(error)
     process.exitCode = 1
   })
-  

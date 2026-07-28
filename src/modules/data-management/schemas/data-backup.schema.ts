@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dailyReviewSyncSnapshotSchema } from "@/platform/sync/daily-review-sync.schemas";
 import {
 	bookNoteSyncSnapshotSchema,
 	bookSyncSnapshotSchema,
@@ -21,6 +22,7 @@ const syncMetadataSchema = z.object({
 		"book",
 		"book_note",
 		"user_settings",
+		"daily_review",
 	]),
 	entityId: z.string().min(1),
 	localVersion: z.number().int().positive(),
@@ -64,19 +66,36 @@ const backupV2Schema = z.object({
 	data: dataV2,
 });
 
+const dataV3 = dataV2.extend({
+	dailyReviews: z.array(dailyReviewSyncSnapshotSchema),
+});
+
+const backupV3Schema = z.object({
+	...common,
+	schemaVersion: z.literal(3),
+	data: dataV3,
+});
+
 export const dataBackupPayloadSchema = z
-	.union([backupV2Schema, backupV1Schema])
+	.union([backupV3Schema, backupV2Schema, backupV1Schema])
 	.transform((payload) => {
+		if (payload.schemaVersion === 3) return payload;
+
 		if (payload.schemaVersion === 2) {
-			return payload;
+			return {
+				...payload,
+				schemaVersion: 3 as const,
+				data: { ...payload.data, dailyReviews: [] },
+			};
 		}
 
 		return {
 			...payload,
-			schemaVersion: 2 as const,
+			schemaVersion: 3 as const,
 			data: {
 				...payload.data,
 				userSettings: [],
+				dailyReviews: [],
 			},
 		};
 	});

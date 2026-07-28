@@ -9,6 +9,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import TanStackQueryDevtools from "../app/providers/tanstack-query/devtools";
 import appCss from "../styles.css?url";
+import "@/platform/sync/daily-review-sync.functions";
 
 interface MyRouterContext {
 	queryClient: QueryClient;

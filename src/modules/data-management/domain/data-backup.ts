@@ -1,3 +1,4 @@
+import type { DailyReviewRecord } from "@/modules/dashboard/infrastructure/local/daily-review.record";
 import type { BookRecord } from "@/modules/library/infrastructure/local/book.record";
 import type { BookNoteRecord } from "@/modules/library/infrastructure/local/book-note.record";
 import type { ReminderRecord } from "@/modules/reminders/infrastructure/local/reminder.record";
@@ -9,7 +10,7 @@ import type { SyncMetadataRecord } from "@/platform/sync/sync.types";
 
 export const DATA_BACKUP_FORMAT = "personal-productivity-os-backup" as const;
 
-export const DATA_BACKUP_SCHEMA_VERSION = 2 as const;
+export const DATA_BACKUP_SCHEMA_VERSION = 3 as const;
 
 export type BackupReason = "manual" | "before_import" | "before_restore";
 
@@ -30,6 +31,7 @@ export type DataBackupPayload = {
 		books: BookRecord[];
 		bookNotes: BookNoteRecord[];
 		userSettings: UserSettingsRecord[];
+		dailyReviews: DailyReviewRecord[];
 	};
 
 	syncMetadata: SyncMetadataRecord[];
@@ -43,6 +45,7 @@ export type BackupDataCounts = {
 	books: number;
 	bookNotes: number;
 	userSettings: number;
+	dailyReviews: number;
 	total: number;
 };
 
@@ -55,6 +58,7 @@ export function countBackupData(payload: DataBackupPayload): BackupDataCounts {
 		books: payload.data.books.length,
 		bookNotes: payload.data.bookNotes.length,
 		userSettings: payload.data.userSettings.length,
+		dailyReviews: payload.data.dailyReviews.length,
 	};
 
 	return {

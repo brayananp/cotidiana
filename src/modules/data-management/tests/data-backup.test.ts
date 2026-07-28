@@ -37,12 +37,13 @@ const payloadV1 = {
 	syncMetadata: [],
 } as const;
 
-describe("data backup v2", () => {
-	it("migra un backup v1 al formato v2", () => {
+describe("data backup v3", () => {
+	it("migra un backup v1 al formato v3", () => {
 		const parsed = dataBackupPayloadSchema.parse(payloadV1);
 
-		expect(parsed.schemaVersion).toBe(2);
+		expect(parsed.schemaVersion).toBe(3);
 		expect(parsed.data.userSettings).toEqual([]);
+		expect(parsed.data.dailyReviews).toEqual([]);
 	});
 
 	it("cuenta las preferencias", () => {
@@ -76,6 +77,7 @@ describe("data backup v2", () => {
 
 		expect(counts.tasks).toBe(1);
 		expect(counts.userSettings).toBe(1);
+		expect(counts.dailyReviews).toBe(0);
 		expect(counts.total).toBe(2);
 	});
 

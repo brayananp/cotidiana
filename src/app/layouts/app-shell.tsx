@@ -2,12 +2,14 @@ import { AppLockGate } from "#/modules/security";
 import { authClient } from "#/platform/auth/auth-client";
 import { subscribeToNetworkChanges } from "#/platform/network/network-status";
 import { ReminderSchedulerBootstrap } from "#/platform/notifications/ReminderSchedulerBootstrap";
-import { PwaBootstrap, PwaUpdatePrompt } from "#/platform/pwa";
+import { PwaBootstrap, PwaControls, PwaUpdatePrompt } from "#/platform/pwa";
 import { TaskSyncBootstrap } from "#/platform/sync";
+import { DailyReviewSyncBootstrap } from "#/platform/sync/DailyReviewSyncBootstrap";
 import { LibrarySyncBootstrap } from "#/platform/sync/LibrarySyncBootstrap";
 import { ReminderSyncBootstrap } from "#/platform/sync/ReminderSyncBootstrap";
 import { SchedulingSyncBootstrap } from "#/platform/sync/SchedulingSyncBootstrap";
 import { SettingsSyncBootstrap } from "#/platform/sync/SettingsSyncBootstrap";
+import { DailyReviewSyncStatus } from "#/shared/components/DailyReviewSyncStatus";
 import { LibrarySyncStatus } from "#/shared/components/LibrarySyncStatus";
 import { ReminderSyncStatus } from "#/shared/components/ReminderSyncStatus";
 import { SchedulingSyncStatus } from "#/shared/components/SchedulingSyncStatus";
@@ -90,15 +92,18 @@ export function AppShell() {
 	return (
 		<>
 			<PwaBootstrap />
+
 			<TaskSyncBootstrap access={access} />
 			<SchedulingSyncBootstrap access={access} />
 			<ReminderSyncBootstrap access={access} />
 			<ReminderSchedulerBootstrap access={access} />
 			<LibrarySyncBootstrap access={access} />
 			<SettingsSyncBootstrap access={access} />
+			<DailyReviewSyncBootstrap access={access} />
 
 			<AppLockGate access={access}>
 				<div className="relative flex min-h-dvh flex-col">
+					<PwaUpdatePrompt />
 					<header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
 						<div className="flex items-center gap-6">
 							<Link
@@ -113,12 +118,14 @@ export function AppShell() {
 						</div>
 
 						<div className="flex items-center gap-2">
-							<PwaUpdatePrompt />
 							<TaskSyncStatus userId={session?.user.id} />
 							<SchedulingSyncStatus userId={session?.user.id} />
 							<ReminderSyncStatus userId={session?.user.id} />
 							<LibrarySyncStatus userId={session?.user.id} />
 							<SettingsSyncStatus userId={session?.user.id} />
+							<DailyReviewSyncStatus userId={session?.user.id} />
+
+							<PwaControls />
 							<AccessBanner mode={access.mode} />
 
 							{isPending ? (

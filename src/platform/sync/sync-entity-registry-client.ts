@@ -6,6 +6,7 @@ import type { TimeBlockRecord } from "@/modules/scheduling/infrastructure/local/
 import type { UserSettingsRecord } from "@/modules/settings/infrastructure/local/user-settings.record";
 import type { TaskRecord } from "@/modules/tasks/infrastructure/local/task.record";
 import { getLocalDatabase } from "@/platform/database/local-database";
+import { dailyReviewSyncSnapshotSchema } from "./daily-review-sync.schemas";
 import {
 	bookNoteSyncSnapshotSchema,
 	bookSyncSnapshotSchema,
@@ -40,7 +41,8 @@ export function isDomainSyncEntityType(
 		value === "reminder" ||
 		value === "book" ||
 		value === "book_note" ||
-		value === "user_settings"
+		value === "user_settings" ||
+		value === "daily_review"
 	);
 }
 
@@ -68,6 +70,8 @@ export function parseEntitySnapshot(
 			return bookNoteSyncSnapshotSchema.parse(payload) as EntitySnapshot;
 		case "user_settings":
 			return userSettingsSyncSnapshotSchema.parse(payload) as EntitySnapshot;
+		case "daily_review":
+			return dailyReviewSyncSnapshotSchema.parse(payload) as EntitySnapshot;
 	}
 }
 
@@ -93,6 +97,8 @@ export async function getEntitySnapshot(
 				return db.bookNotes.get(id);
 			case "user_settings":
 				return db.userSettings.get(id);
+			case "daily_review":
+				return db.dailyReviews.get(id);
 		}
 	})();
 
@@ -132,6 +138,8 @@ export async function putEntitySnapshot(
 		case "user_settings":
 			await db.userSettings.put(snapshot as UserSettingsRecord);
 			return;
+		case "daily_review":
+			await db.dailyReviews.put(snapshot as DailyReviewRecord);
 	}
 }
 
@@ -163,6 +171,8 @@ export async function deleteEntitySnapshot(
 		case "user_settings":
 			await db.userSettings.delete(id);
 			return;
+		case "daily_review":
+			await db.dailyReviews.delete(id);
 	}
 }
 
@@ -172,8 +182,8 @@ export function cloneEntitySnapshot(
 	userId: string,
 	now = new Date(),
 ): EntitySnapshot {
-	if (entityType === "user_settings") {
-		throw new Error("USER_SETTINGS_CANNOT_BE_DUPLICATED");
+	if (entityType === "user_settings" || entityType === "daily_review") {
+		throw new Error("SYNC_ENTITY_CANNOT_BE_DUPLICATED");
 	}
 	const timestamp = now.toISOString();
 
@@ -203,12 +213,13 @@ export function getEntityTypeLabel(entityType: SyncEntityType): string {
 		book: "Libro",
 		book_note: "Nota de libro",
 		user_settings: "Configuración",
+		daily_review: "Revisión diaria",
 	}[entityType];
 }
 
 export function getEntityDisplayName(payload: unknown): string {
 	if (typeof payload === "object" && payload !== null) {
-		for (const key of ["title", "content", "name"]) {
+		for (const key of ["title", "content", "name", "reviewDate"]) {
 			const value = Reflect.get(payload, key);
 
 			if (typeof value === "string" && value.trim()) {
@@ -218,3 +229,5 @@ export function getEntityDisplayName(payload: unknown): string {
 	}
 	return "Sin nombre";
 }
+
+import type { DailyReviewRecord } from "@/modules/dashboard/infrastructure/local/daily-review.record";

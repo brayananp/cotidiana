@@ -71,6 +71,7 @@ export async function resolveSyncConflict(
 			db.books,
 			db.bookNotes,
 			db.userSettings,
+			db.dailyReviews,
 			db.syncOperations,
 			db.syncMetadata,
 			db.syncConflicts,
@@ -464,6 +465,8 @@ async function getEntityOperations(
 		.equals([conflict.entityType, conflict.entityId])
 		.toArray();
 
+	const operationIds = new Set(conflict.localOperationIds);
+
 	const byId = await Promise.all(
 		conflict.localOperationIds.map((id) => db.syncOperations.get(id)),
 	);
@@ -476,6 +479,11 @@ async function getEntityOperations(
 	];
 
 	const unique = new Map(all.map((operation) => [operation.id, operation]));
+
+	for (const id of operationIds) {
+		if (!unique.has(id)) {
+		}
+	}
 
 	return Array.from(unique.values());
 }

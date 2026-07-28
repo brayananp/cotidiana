@@ -13,7 +13,7 @@ import type {
 import type { LocalBackupRecord } from "../infrastructure/local/local-backup.record";
 import { dataBackupPayloadSchema } from "../schemas/data-backup.schema";
 
-const APP_VERSION = "1.10.0";
+const APP_VERSION = "1.11.0";
 const MAX_LOCAL_BACKUPS = 20;
 
 const DOMAIN_ENTITY_TYPES = [
@@ -24,6 +24,7 @@ const DOMAIN_ENTITY_TYPES = [
 	"book",
 	"book_note",
 	"user_settings",
+	"daily_review",
 ] as const satisfies readonly SyncEntityType[];
 
 export async function createDataBackupPayload(
@@ -39,6 +40,7 @@ export async function createDataBackupPayload(
 		books,
 		bookNotes,
 		userSettings,
+		dailyReviews,
 	] = await Promise.all([
 		db.tasks.where("userId").equals(userId).toArray(),
 		db.timeBlocks.where("userId").equals(userId).toArray(),
@@ -47,6 +49,7 @@ export async function createDataBackupPayload(
 		db.books.where("userId").equals(userId).toArray(),
 		db.bookNotes.where("userId").equals(userId).toArray(),
 		db.userSettings.where("userId").equals(userId).toArray(),
+		db.dailyReviews.where("userId").equals(userId).toArray(),
 	]);
 
 	const entityKeys = new Set<string>();
@@ -79,6 +82,10 @@ export async function createDataBackupPayload(
 		entityKeys.add(`user_settings:${item.id}`);
 	}
 
+	for (const item of dailyReviews) {
+		entityKeys.add(`daily_review:${item.id}`);
+	}
+
 	const allMetadata = await db.syncMetadata.toArray();
 
 	const syncMetadata = allMetadata.filter((metadata) =>
@@ -87,7 +94,7 @@ export async function createDataBackupPayload(
 
 	return dataBackupPayloadSchema.parse({
 		format: "personal-productivity-os-backup",
-		schemaVersion: 2,
+		schemaVersion: 3,
 		appVersion: APP_VERSION,
 		exportedAt: new Date().toISOString(),
 		sourceUserId: userId,
@@ -99,6 +106,7 @@ export async function createDataBackupPayload(
 			books,
 			bookNotes,
 			userSettings,
+			dailyReviews,
 		},
 		syncMetadata,
 	});
@@ -196,6 +204,7 @@ export async function importDataBackup(input: {
 			db.books,
 			db.bookNotes,
 			db.userSettings,
+			db.dailyReviews,
 			db.syncOperations,
 			db.syncMetadata,
 			db.syncConflicts,
@@ -357,6 +366,10 @@ export async function importDataBackup(input: {
 			for (const settings of payload.data.userSettings) {
 				await processRecord("user_settings", settings);
 			}
+
+			for (const review of payload.data.dailyReviews) {
+				await processRecord("daily_review", review);
+			}
 		},
 	);
 
@@ -379,6 +392,7 @@ async function clearUserDomainData(userId: string): Promise<void> {
 		books,
 		bookNotes,
 		userSettings,
+		dailyReviews,
 		operations,
 		conflicts,
 		cursors,
@@ -391,6 +405,7 @@ async function clearUserDomainData(userId: string): Promise<void> {
 		db.books.where("userId").equals(userId).toArray(),
 		db.bookNotes.where("userId").equals(userId).toArray(),
 		db.userSettings.where("userId").equals(userId).toArray(),
+		db.dailyReviews.where("userId").equals(userId).toArray(),
 		db.syncOperations.where("userId").equals(userId).toArray(),
 		db.syncConflicts.where("userId").equals(userId).toArray(),
 		db.syncCursors.where("userId").equals(userId).toArray(),
@@ -408,6 +423,9 @@ async function clearUserDomainData(userId: string): Promise<void> {
 		...bookNotes.map((item) => createSyncMetadataId("book_note", item.id)),
 		...userSettings.map((item) =>
 			createSyncMetadataId("user_settings", item.id),
+		),
+		...dailyReviews.map((item) =>
+			createSyncMetadataId("daily_review", item.id),
 		),
 		...operations
 			.filter((item) =>
@@ -433,6 +451,7 @@ async function clearUserDomainData(userId: string): Promise<void> {
 		db.books.bulkDelete(books.map((item) => item.id)),
 		db.bookNotes.bulkDelete(bookNotes.map((item) => item.id)),
 		db.userSettings.bulkDelete(userSettings.map((item) => item.id)),
+		db.dailyReviews.bulkDelete(dailyReviews.map((item) => item.id)),
 		db.syncOperations.bulkDelete(operations.map((item) => item.id)),
 		db.syncConflicts.bulkDelete(conflicts.map((item) => item.id)),
 		db.syncCursors.bulkDelete(cursors.map((item) => item.id)),
@@ -469,6 +488,8 @@ async function getDomainEntity(
 			return db.bookNotes.get(id);
 		case "user_settings":
 			return db.userSettings.get(id);
+		case "daily_review":
+			return db.dailyReviews.get(id);
 	}
 }
 
@@ -499,6 +520,9 @@ async function putDomainEntity(
 			return;
 		case "user_settings":
 			await db.userSettings.put(value as never);
+			return;
+		case "daily_review":
+			await db.dailyReviews.put(value as never);
 	}
 }
 
@@ -529,6 +553,9 @@ async function deleteDomainEntity(
 			return;
 		case "user_settings":
 			await db.userSettings.delete(id);
+			return;
+		case "daily_review":
+			await db.dailyReviews.delete(id);
 	}
 }
 
