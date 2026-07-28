@@ -1,0 +1,32 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1024 1024"
+  role="img"
+  aria-labelledby="title description"
+>
+  <title id="title">Personal Productivity OS</title>
+  <desc id="description">
+    Símbolo abstracto de productividad con una letra P, una marca de
+    verificación y bloques organizados.
+  </desc>
+
+  <rect width="1024" height="1024" rx="224" fill="#0f172a" />
+
+  <path
+    d="M278 232h250c150 0 244 81 244 210 0 136-101 219-263 219H426v131H278V232Zm148 125v180h89c69 0 108-32 108-91 0-57-39-89-108-89h-89Z"
+    fill="#f8fafc"
+  />
+
+  <path
+    d="m566 730 71 71 151-177"
+    fill="none"
+    stroke="#38bdf8"
+    stroke-width="64"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <rect x="132" y="142" width="92" height="92" rx="28" fill="#38bdf8" />
+  <rect x="800" y="142" width="92" height="92" rx="28" fill="#22c55e" />
+  <rect x="132" y="790" width="92" height="92" rx="28" fill="#a78bfa" />
+</svg>

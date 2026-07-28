@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Sin conexión · Personal Productivity OS</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f8fafc;
+        color: #0f172a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      main {
+        width: min(100%, 520px);
+        border: 1px solid #cbd5e1;
+        border-radius: 20px;
+        padding: 32px;
+        background: #ffffff;
+        box-shadow: 0 20px 50px rgb(15 23 42 / 0.08);
+      }
+
+      .icon {
+        width: 64px;
+        height: 64px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: #0f172a;
+        color: #ffffff;
+        font-size: 30px;
+        font-weight: 800;
+      }
+
+      h1 {
+        margin: 24px 0 8px;
+        font-size: clamp(1.6rem, 5vw, 2.2rem);
+      }
+
+      p {
+        margin: 0;
+        color: #475569;
+        line-height: 1.65;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      a,
+      button {
+        min-height: 42px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 10px 16px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      button {
+        background: #0f172a;
+        border-color: #0f172a;
+        color: #ffffff;
+      }
+
+      small {
+        display: block;
+        margin-top: 24px;
+        color: #64748b;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          background: #020617;
+          color: #f8fafc;
+        }
+
+        main {
+          background: #0f172a;
+          border-color: #334155;
+          box-shadow: none;
+        }
+
+        .icon,
+        button {
+          background: #f8fafc;
+          border-color: #f8fafc;
+          color: #0f172a;
+        }
+
+        p,
+        small {
+          color: #cbd5e1;
+        }
+
+        a {
+          border-color: #475569;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="icon" aria-hidden="true">P</div>
+
+      <h1>No hay conexión</h1>
+
+      <p>
+        La página solicitada todavía no está guardada en este dispositivo.
+        Regresa a una sección visitada anteriormente o vuelve a intentarlo
+        cuando tengas Internet.
+      </p>
+
+      <div class="actions">
+        <button type="button" onclick="window.location.reload()">
+          Reintentar
+        </button>
+
+        <a href="/dashboard">Ir al dashboard</a>
+      </div>
+
+      <small>
+        Las tareas, la agenda, los recordatorios y la biblioteca que ya están
+        en Dexie permanecen disponibles cuando el shell de la aplicación está
+        cargado.
+      </small>
+    </main>
+  </body>
+</html>

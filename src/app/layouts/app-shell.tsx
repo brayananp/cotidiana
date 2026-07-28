@@ -1,4 +1,5 @@
 import { authClient } from "#/platform/auth/auth-client";
+import { PwaBootstrap, PwaUpdatePrompt } from "#/platform/pwa";
 import { TaskSyncStatus } from "@/shared/components/TaskSyncStatus";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -20,7 +21,7 @@ import {
 } from "@/shared/components/ui/sheet";
 import { MenuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
 import { useState } from "react";
 
 const navItems = [
@@ -35,12 +36,13 @@ export function AppShell() {
 	const navigate = useNavigate();
 	const { data: session, isPending } = authClient.useSession();
 	const [mobileOpen, setMobileOpen] = useState(false);
-
 	const handleSignOut = async () => {
 		await authClient.signOut();
 		await navigate({ to: "/login", replace: true });
 	};
-
+	const { access } = useRouteContext({
+		from: "/_app",
+	});
 	const NavLinks = ({ onClick }: { onClick?: () => void }) => (
 		<>
 			{navItems.map((item) => (
@@ -74,6 +76,10 @@ export function AppShell() {
 
 				<div className="flex items-center gap-2">
 					<TaskSyncStatus userId={session?.user.id} />
+					<PwaBootstrap/>
+					<PwaUpdatePrompt />
+					<AccessBanner mode={access.mode} />
+
 					{isPending ? (
 						<div className="h-8 w-20 animate-pulse rounded-2xl bg-muted" />
 					) : session ? (
@@ -155,3 +161,53 @@ export function AppShell() {
 		</div>
 	);
 }
+
+function AccessBanner({
+	mode,
+  }: {
+	mode:
+	  | 'remote_authenticated'
+	  | 'local_offline'
+	  | 'local_remote_unavailable'
+	  | 'reauthentication_required'
+	  | 'unauthenticated'
+  }) {
+	if (
+	  mode === 'remote_authenticated'
+	) {
+	  return null
+	}
+  
+	const message = {
+	  local_offline:
+		'Trabajando sin conexión. Los cambios se sincronizarán cuando vuelva Internet.',
+  
+	  local_remote_unavailable:
+		'Turso o el servidor no están disponibles. Puedes continuar trabajando localmente.',
+  
+	  reauthentication_required:
+		'La sesión remota expiró. Puedes trabajar localmente, pero debes iniciar sesión para sincronizar.',
+  
+	  unauthenticated:
+		'No existe una sesión activa.',
+	}[mode]
+  
+	return (
+	  <div
+		role="status"
+		className="flex items-center justify-between gap-4 border-b bg-muted px-6 py-2 text-sm"
+	  >
+		<span>{message}</span>
+  
+		{mode ===
+		  'reauthentication_required' && (
+		  <Link
+			to="/login"
+			className="font-medium underline"
+		  >
+			Iniciar sesión
+		  </Link>
+		)}
+	  </div>
+	)
+  }

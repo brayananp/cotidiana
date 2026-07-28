@@ -2,7 +2,7 @@
   "name": "cotidiana",
   "private": true,
   "type": "module",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "description": "A modern web application for managing your daily tasks and habits.",
   "author": "Brayan Alexis Nuñez <brayalexis.30@gmail.com>",
   "license": "private",
@@ -17,7 +17,9 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "generate-routes": "tsr generate",
-    "build": "vite build",
+    "build:app": "vite build",
+    "build": "pnpm build:app && pnpm build:pwa",
+    "build:pwa": "tsx scripts/build-service-worker.ts",
     "preview": "vite preview",
     "format": "biome format",
     "lint": "biome lint",
@@ -26,7 +28,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "typecheck:pwa": "tsc -p tsconfig.service-worker.json",
+    "verify:pwa": "tsx scripts/verify-pwa-build.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -64,6 +68,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "@serwist/build": "^9.5.12",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/router-cli": "^1.132.0",
     "@types/better-sqlite3": "^7.6.0",
@@ -73,6 +78,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "dotenv": "^17.3.1",
     "drizzle-kit": "1.0.0-rc.4",
+    "serwist": "^9.5.12",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
