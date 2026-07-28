@@ -1,4 +1,5 @@
 export type {
+	PullLibraryChange,
 	PullTaskChange,
 	PushOperationResult,
 	SyncConflictRecord,

@@ -1,5 +1,6 @@
+import type { BookNoteRecord } from "#/modules/library/infrastructure/local/book-note.record";
+import type { BookRecord } from "#/modules/library/infrastructure/local/book.record";
 import type { ReminderRecord } from "#/modules/reminders/infrastructure/local/reminder.record";
-import Dexie, { type EntityTable } from "dexie";
 import type { CalendarEventRecord } from "@/modules/scheduling/infrastructure/local/calendar-event.record";
 import type { TimeBlockRecord } from "@/modules/scheduling/infrastructure/local/time-block.record";
 import type { TaskRecord } from "@/modules/tasks/infrastructure/local/task.record";
@@ -10,6 +11,7 @@ import type {
 	SyncOperationRecord,
 	SyncRuntimeRecord,
 } from "@/platform/sync/sync.types";
+import Dexie, { type EntityTable } from "dexie";
 
 export type LocalDeviceRecord = {
 	id: string;
@@ -48,6 +50,8 @@ export class ProductivityLocalDatabase extends Dexie {
 	timeBlocks!: EntityTable<TimeBlockRecord, "id">;
 	calendarEvents!: EntityTable<CalendarEventRecord, "id">;
 	reminders!: EntityTable<ReminderRecord, "id">;
+	books!: EntityTable<BookRecord, "id">;
+	bookNotes!: EntityTable<BookNoteRecord, "id">;
 	syncOperations!: EntityTable<SyncOperationRecord, "id">;
 	syncMetadata!: EntityTable<SyncMetadataRecord, "id">;
 	syncCursors!: EntityTable<SyncCursorRecord, "id">;
@@ -146,6 +150,34 @@ export class ProductivityLocalDatabase extends Dexie {
 				"id, userId, eventType, startAt, endAt, updatedAt, deletedAt, [userId+startAt], [userId+updatedAt]",
 			reminders:
 				"id, userId, status, targetType, targetId, nextTriggerAt, updatedAt, deletedAt, [userId+status], [userId+nextTriggerAt], [userId+updatedAt]",
+			syncOperations:
+				"id, userId, deviceId, status, entityType, entityId, createdAt, nextRetryAt, [entityType+entityId], [status+createdAt]",
+			syncMetadata:
+				"id, entityType, entityId, state, lastSyncedAt, [entityType+entityId]",
+			syncCursors:
+				"id, userId, entityType, cursor, updatedAt, [userId+entityType]",
+			syncConflicts:
+				"id, userId, entityType, entityId, createdAt, resolvedAt, [entityType+entityId], [userId+resolvedAt]",
+			syncRuntime:
+				"id, userId, entityType, state, updatedAt, [userId+entityType]",
+		});
+		this.version(7).stores({
+			localDevices: "id, createdAt, lastOpenedAt",
+			localIdentities:
+				"id, userId, deviceId, email, updatedAt, [userId+deviceId]",
+			activeProfile: "id, userId, deviceId, updatedAt",
+			tasks:
+				"id, userId, status, priority, plannedAt, dueAt, updatedAt, deletedAt, [userId+status], [userId+updatedAt]",
+			timeBlocks:
+				"id, userId, taskId, status, kind, startAt, endAt, updatedAt, deletedAt, [userId+startAt], [userId+updatedAt]",
+			calendarEvents:
+				"id, userId, eventType, startAt, endAt, updatedAt, deletedAt, [userId+startAt], [userId+updatedAt]",
+			reminders:
+				"id, userId, status, targetType, targetId, nextTriggerAt, updatedAt, deletedAt, [userId+status], [userId+nextTriggerAt], [userId+updatedAt]",
+			books:
+				"id, userId, status, title, author, isbn, updatedAt, deletedAt, [userId+status], [userId+updatedAt]",
+			bookNotes:
+				"id, userId, bookId, type, page, updatedAt, deletedAt, [userId+bookId], [bookId+page], [userId+updatedAt]",
 			syncOperations:
 				"id, userId, deviceId, status, entityType, entityId, createdAt, nextRetryAt, [entityType+entityId], [status+createdAt]",
 			syncMetadata:

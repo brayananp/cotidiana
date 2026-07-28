@@ -156,7 +156,15 @@ export type PullReminderChange = {
 	payload: Json;
 	createdAt: string;
 };
-
+export type PullLibraryChange = {
+	sequence: number;
+	entityType: "book" | "book_note";
+	entityId: string;
+	operation: SyncOperationType;
+	version: number;
+	payload: Json;
+	createdAt: string;
+};
 export function createSyncMetadataId(
 	entityType: SyncEntityType,
 	entityId: string,
