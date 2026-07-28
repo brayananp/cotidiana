@@ -1,3 +1,13 @@
+import { ResponsiveDialog } from "#/shared/components/responsive-dialog";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
 import { useState } from "react";
 import type { LibraryExecutionContext } from "../../application/library-context";
 import type { Book } from "../../domain/book";
@@ -19,109 +29,126 @@ export function BookDetails({
 	const [editingNote, setEditingNote] = useState<BookNote | null>(null);
 
 	const [progress, setProgress] = useState(book.currentPage);
-
+	const [isOpenFormNote, setIsOpenFormNote] = useState(false);
 	return (
-		<section className="space-y-5 rounded-xl border p-4">
-			<header>
-				<h2 className="text-xl font-semibold">{book.title}</h2>
-
+		<Card>
+			<CardHeader>
+				<CardTitle>{book.title}</CardTitle>
+			</CardHeader>
+			<CardContent className="flex flex-col gap-5">
 				<p className="text-sm text-muted-foreground">
 					{book.author ?? "Autor no indicado"}
 				</p>
-			</header>
 
-			{book.description && <p className="text-sm">{book.description}</p>}
+				{book.description && <p className="text-sm">{book.description}</p>}
+				<Button onClick={() => setIsOpenFormNote(true)}>Agregar nota</Button>
+				<div className="flex flex-col gap-2 rounded-lg border p-3">
+					<h3 className="font-medium">Progreso</h3>
 
-			<div className="space-y-2 rounded-lg border p-3">
-				<h3 className="font-medium">Progreso</h3>
+					<div className="flex flex-wrap items-center gap-2">
+						<Input
+							type="number"
+							min={0}
+							max={book.pageCount ?? undefined}
+							value={progress}
+							onChange={(event) => setProgress(Number(event.target.value))}
+							className="w-28"
+						/>
 
-				<div className="flex flex-wrap items-center gap-2">
-					<input
-						type="number"
-						min={0}
-						max={book.pageCount ?? undefined}
-						value={progress}
-						onChange={(event) => setProgress(Number(event.target.value))}
-						className="h-10 w-28 rounded-md border px-3"
-					/>
+						{book.pageCount !== null && (
+							<span className="text-sm text-muted-foreground">
+								de {book.pageCount}
+							</span>
+						)}
 
-					{book.pageCount !== null && (
-						<span className="text-sm text-muted-foreground">
-							de {book.pageCount}
-						</span>
-					)}
-
-					<button
-						type="button"
-						className="h-10 rounded-md border px-3 text-sm"
-						onClick={() =>
-							void libraryDependencies.updateBookProgress(
-								book.id,
-								progress,
-								context,
-							)
-						}
-					>
-						Actualizar progreso
-					</button>
+						<Button
+							size="sm"
+							onClick={() =>
+								void libraryDependencies.updateBookProgress(
+									book.id,
+									progress,
+									context,
+								)
+							}
+						>
+							Actualizar progreso
+						</Button>
+					</div>
 				</div>
-			</div>
 
-			<BookNoteForm
-				key={editingNote?.id ?? `new-note-${book.id}`}
-				bookId={book.id}
-				context={context}
-				note={editingNote}
-				onCompleted={() => setEditingNote(null)}
-			/>
+				<ResponsiveDialog
+					title="Agregar nota"
+					description="Agrega una nota para este libro."
+					open={isOpenFormNote}
+					onOpenChange={setIsOpenFormNote}
+				>
+					<BookNoteForm
+						key={editingNote?.id ?? `new-note-${book.id}`}
+						bookId={book.id}
+						context={context}
+						note={editingNote}
+						onCompleted={() => setEditingNote(null)}
+						onCancel={() => setIsOpenFormNote(false)}
+					/>
+				</ResponsiveDialog>
+				{/* <BookNoteForm
+					key={editingNote?.id ?? `new-note-${book.id}`}
+					bookId={book.id}
+					context={context}
+					note={editingNote}
+					onCompleted={() => setEditingNote(null)}
+				/> */}
 
-			<div className="space-y-3">
-				<h3 className="font-medium">Notas y citas</h3>
+				<div className="flex flex-col gap-3">
+					<h3 className="font-medium">Notas y citas</h3>
 
-				{notes.length === 0 ? (
-					<p className="text-sm text-muted-foreground">Aún no hay notas.</p>
-				) : (
-					notes.map((note) => (
-						<article key={note.id} className="space-y-2 rounded-lg border p-3">
-							<div className="flex items-center justify-between gap-3">
-								<span className="rounded-full border px-2 py-1 text-xs">
-									{bookNoteTypeLabels[note.type]}
-								</span>
+					{notes.length === 0 ? (
+						<p className="text-sm text-muted-foreground">Aún no hay notas.</p>
+					) : (
+						notes.map((note) => (
+							<Card key={note.id} size="sm">
+								<CardContent className="flex flex-col gap-2 p-3">
+									<div className="flex items-center justify-between gap-3">
+										<Badge variant="outline">
+											{bookNoteTypeLabels[note.type]}
+										</Badge>
 
-								{note.page !== null && (
-									<span className="text-xs text-muted-foreground">
-										Página {note.page}
-									</span>
-								)}
-							</div>
+										{note.page !== null && (
+											<span className="text-xs text-muted-foreground">
+												Página {note.page}
+											</span>
+										)}
+									</div>
 
-							<p className="whitespace-pre-wrap text-sm">{note.content}</p>
+									<p className="whitespace-pre-wrap text-sm">{note.content}</p>
 
-							<div className="flex gap-2">
-								<button
-									type="button"
-									className="rounded-md border px-2 py-1 text-xs"
-									onClick={() => setEditingNote(note)}
-								>
-									Editar
-								</button>
+									<div className="flex gap-2">
+										<Button
+											variant="outline"
+											size="xs"
+											onClick={() => setEditingNote(note)}
+										>
+											Editar
+										</Button>
 
-								<button
-									type="button"
-									className="rounded-md border border-destructive/40 px-2 py-1 text-xs text-destructive"
-									onClick={() => {
-										if (window.confirm("¿Eliminar esta nota?")) {
-											void libraryDependencies.deleteNote(note.id, context);
-										}
-									}}
-								>
-									Eliminar
-								</button>
-							</div>
-						</article>
-					))
-				)}
-			</div>
-		</section>
+										<Button
+											variant="destructive"
+											size="xs"
+											onClick={() => {
+												if (window.confirm("¿Eliminar esta nota?")) {
+													void libraryDependencies.deleteNote(note.id, context);
+												}
+											}}
+										>
+											Eliminar
+										</Button>
+									</div>
+								</CardContent>
+							</Card>
+						))
+					)}
+				</div>
+			</CardContent>
+		</Card>
 	);
 }

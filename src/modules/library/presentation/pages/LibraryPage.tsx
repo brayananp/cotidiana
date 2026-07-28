@@ -1,3 +1,21 @@
+import { ResponsiveDialog } from "#/shared/components/responsive-dialog";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyMedia,
+	EmptyTitle,
+} from "#/shared/components/ui/empty";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/shared/components/ui/select";
+import { BooksIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useRouteContext } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Book, BookStatus } from "../../domain/book";
@@ -40,6 +58,9 @@ function LibraryContent({
 
 	const [editingBook, setEditingBook] = useState<Book | null>(null);
 
+	const [isFormOpen, setIsFormOpen] = useState(false);
+	const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
 	const statuses = filter === "all" ? [] : [filter];
 
 	const books = useBooks(userId, statuses, search);
@@ -52,95 +73,119 @@ function LibraryContent({
 	};
 
 	return (
-		<section className="space-y-6">
-			<header>
-				<h1 className="text-2xl font-semibold">Biblioteca</h1>
+		<section className="flex flex-col gap-6">
+			<header className="flex items-center justify-between">
+				<div>
+					<h1 className="text-2xl font-semibold">Biblioteca</h1>
 
-				<p className="text-sm text-muted-foreground">
-					Libros, progreso, notas e ideas disponibles offline.
-				</p>
+					<p className="text-sm text-muted-foreground">
+						Libros, progreso, notas e ideas disponibles offline.
+					</p>
+				</div>
+
+				<Button
+					onClick={() => {
+						setEditingBook(null);
+						setIsFormOpen(true);
+					}}
+				>
+					Agregar libro
+				</Button>
 			</header>
 
-			<BookForm
-				key={editingBook?.id ?? "new-book"}
-				context={context}
-				book={editingBook}
-				onCompleted={() => setEditingBook(null)}
-			/>
+			<ResponsiveDialog
+				title={editingBook ? "Editar libro" : "Agregar libro"}
+				description="El catálogo se guarda primero en este dispositivo."
+				open={isFormOpen}
+				onOpenChange={setIsFormOpen}
+			>
+				<BookForm
+					key={editingBook?.id ?? "new-book"}
+					context={context}
+					book={editingBook}
+					onCompleted={() => {
+						setEditingBook(null);
+						setIsFormOpen(false);
+					}}
+				/>
+			</ResponsiveDialog>
+			{selectedBook && (
+				<ResponsiveDialog
+					title="Detalles del libro"
+					description="El catálogo se guarda primero en este dispositivo."
+					open={isDetailsOpen}
+					onOpenChange={setIsDetailsOpen}
+				>
+					<BookDetails book={selectedBook} context={context} />
+				</ResponsiveDialog>
+			)}
 
 			<div className="flex flex-wrap gap-3">
-				<input
+				<Input
 					type="search"
 					value={search}
 					onChange={(event) => setSearch(event.target.value)}
 					placeholder="Buscar por título, autor, ISBN o etiqueta"
-					className="h-10 min-w-64 flex-1 rounded-md border px-3"
+					className="min-w-64 flex-1"
 				/>
 
-				<select
+				<Select
 					value={filter}
-					onChange={(event) => setFilter(event.target.value as LibraryFilter)}
-					className="h-10 rounded-md border px-3"
+					onValueChange={(value) => setFilter(value as LibraryFilter)}
 				>
-					<option value="all">Todos</option>
-					<option value="want_to_read">Quiero leer</option>
-					<option value="reading">Leyendo</option>
-					<option value="completed">Completados</option>
-					<option value="paused">En pausa</option>
-					<option value="dropped">Abandonados</option>
-				</select>
+					<SelectTrigger className="w-fit">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">Todos</SelectItem>
+						<SelectItem value="want_to_read">Quiero leer</SelectItem>
+						<SelectItem value="reading">Leyendo</SelectItem>
+						<SelectItem value="completed">Completados</SelectItem>
+						<SelectItem value="paused">En pausa</SelectItem>
+						<SelectItem value="dropped">Abandonados</SelectItem>
+					</SelectContent>
+				</Select>
 			</div>
 
-			<div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
-				<div>
-					{books.length === 0 ? (
-						<div className="rounded-xl border border-dashed p-8 text-center">
-							<h2 className="font-medium">No hay libros</h2>
+			{books.length === 0 ? (
+				<Empty>
+					<EmptyTitle>No hay libros</EmptyTitle>
+					<EmptyMedia variant="icon">
+						<HugeiconsIcon icon={BooksIcon} className="size-10" />
+					</EmptyMedia>
+					<EmptyDescription>
+						Agrega el primer libro de tu biblioteca.
+					</EmptyDescription>
+				</Empty>
+			) : (
+				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+					{books.map((book) => (
+						<BookCard
+							key={book.id}
+							book={book}
+							selected={selectedBookId === book.id}
+							onSelect={() => {
+								setSelectedBookId(book.id);
+								setIsFormOpen(false);
+								setIsDetailsOpen(true);
+							}}
+							onEdit={() => {
+								setEditingBook(book);
+								setIsFormOpen(true);
+							}}
+							onDelete={() => {
+								if (window.confirm("¿Eliminar el libro y sus notas?")) {
+									void libraryDependencies.deleteBook(book.id, context);
 
-							<p className="text-sm text-muted-foreground">
-								Agrega el primer libro de tu biblioteca.
-							</p>
-						</div>
-					) : (
-						<div className="grid gap-3 md:grid-cols-2">
-							{books.map((book) => (
-								<BookCard
-									key={book.id}
-									book={book}
-									selected={selectedBookId === book.id}
-									onSelect={() => setSelectedBookId(book.id)}
-									onEdit={() => setEditingBook(book)}
-									onDelete={() => {
-										if (window.confirm("¿Eliminar el libro y sus notas?")) {
-											void libraryDependencies.deleteBook(book.id, context);
-
-											if (selectedBookId === book.id) {
-												setSelectedBookId(null);
-											}
-										}
-									}}
-								/>
-							))}
-						</div>
-					)}
-				</div>
-
-				<div>
-					{selectedBook ? (
-						<BookDetails
-							key={`${selectedBook.id}:${selectedBook.version}`}
-							book={selectedBook}
-							context={context}
+									if (selectedBookId === book.id) {
+										setSelectedBookId(null);
+									}
+								}
+							}}
 						/>
-					) : (
-						<div className="rounded-xl border border-dashed p-8 text-center">
-							<p className="text-sm text-muted-foreground">
-								Selecciona un libro para ver su progreso y notas.
-							</p>
-						</div>
-					)}
+					))}
 				</div>
-			</div>
+			)}
 		</section>
 	);
 }
