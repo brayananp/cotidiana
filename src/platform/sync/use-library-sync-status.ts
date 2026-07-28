@@ -1,5 +1,5 @@
-import { getLocalDatabase } from "@/platform/database/local-database";
 import { useLiveQuery } from "dexie-react-hooks";
+import { getLocalDatabase } from "@/platform/database/local-database";
 import { createSyncRuntimeId, type SyncRuntimeState } from "./sync.types";
 
 export type LibrarySyncStatusSnapshot = {
@@ -14,7 +14,7 @@ export type LibrarySyncStatusSnapshot = {
 export function useLibrarySyncStatus(
 	userId: string | undefined,
 ): LibrarySyncStatusSnapshot | null | undefined {
-	return useLiveQuery<LibrarySyncStatusSnapshot | null>(
+	return useLiveQuery<LibrarySyncStatusSnapshot | null, null>(
 		async () => {
 			if (!userId) {
 				return null;

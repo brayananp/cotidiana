@@ -1,11 +1,11 @@
+import { useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 import type { AppAccess } from "@/platform/auth/app-access.types";
 import { getLocalDatabase } from "@/platform/database/local-database";
 import {
 	browserReportsOnline,
 	subscribeToNetworkChanges,
 } from "@/platform/network/network-status";
-import { useRouter } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { runLibrarySync } from "./library-sync-client";
 import { subscribeToLibrarySyncRequests } from "./library-sync-events-client";
 import { createSyncRuntimeId } from "./sync.types";

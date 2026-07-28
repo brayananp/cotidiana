@@ -14,7 +14,7 @@ export type ReminderSyncStatusSnapshot = {
 export function useReminderSyncStatus(
 	userId: string | undefined,
 ): ReminderSyncStatusSnapshot | null | undefined {
-	return useLiveQuery<ReminderSyncStatusSnapshot | null>(
+	return useLiveQuery<ReminderSyncStatusSnapshot | null, null>(
 		async () => {
 			if (!userId) {
 				return null;

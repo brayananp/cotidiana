@@ -27,13 +27,6 @@ import {
 
 const ENTITY_TYPES = ["time_block", "calendar_event"] as const;
 
-type PushSchedulingResponse = { results: PushOperationResult[] };
-type PullSchedulingResponse = {
-	changes: PullSchedulingChange[];
-	nextCursor: number;
-	hasMore: boolean;
-};
-
 const PUSH_BATCH_SIZE = 50;
 const PULL_BATCH_SIZE = 100;
 const MAX_BATCHES_PER_RUN = 10;
@@ -77,12 +70,12 @@ export async function runSchedulingSync(
 				}
 
 				try {
-					const response = (await pushSchedulingOperationsFn({
+					const response = await pushSchedulingOperationsFn({
 						data: {
 							deviceId: input.deviceId,
 							operations: operations.map(toPushInput),
 						},
-					})) as PushSchedulingResponse;
+					});
 
 					const summary = await applyPushResults(
 						input.userId,
@@ -104,14 +97,14 @@ export async function runSchedulingSync(
 				for (let batch = 0; batch < MAX_BATCHES_PER_RUN; batch += 1) {
 					const cursor = await getCursor(input.userId, entityType);
 
-					const response = (await pullSchedulingChangesFn({
+					const response = await pullSchedulingChangesFn({
 						data: {
 							deviceId: input.deviceId,
 							entityType,
 							cursor,
 							limit: PULL_BATCH_SIZE,
 						},
-					})) as PullSchedulingResponse;
+					});
 
 					const result = await applyPullChanges(
 						input.userId,
@@ -337,7 +330,6 @@ async function applyPushResults(
 
 		if (result.status === "applied") {
 			await applyPushedSnapshot(
-				userId,
 				operation,
 				result.serverPayload,
 				result.version,
@@ -367,7 +359,6 @@ async function applyPushResults(
 }
 
 async function applyPushedSnapshot(
-	_userId: string,
 	operation: SyncOperationRecord,
 	rawSnapshot: unknown,
 	remoteVersion: number,
@@ -480,6 +471,8 @@ async function storePushConflict(
 				reason: result.reason,
 				createdAt: now,
 				resolvedAt: null,
+				resolution: null,
+				resolvedPayload: null,
 			});
 		},
 	);
@@ -596,6 +589,8 @@ async function applyPullChanges(
 						reason: "REMOTE_CHANGE_WITH_LOCAL_OPERATIONS",
 						createdAt: new Date().toISOString(),
 						resolvedAt: null,
+						resolution: null,
+						resolvedPayload: null,
 					});
 
 					await db.syncMetadata.put({

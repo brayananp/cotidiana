@@ -448,6 +448,8 @@ async function storePushConflict(
 				reason: result.reason,
 				createdAt: now,
 				resolvedAt: null,
+				resolution: null,
+				resolvedPayload: null,
 			});
 		},
 	);
@@ -557,6 +559,8 @@ async function applyPullChanges(
 						reason: "REMOTE_CHANGE_WITH_LOCAL_OPERATIONS",
 						createdAt: new Date().toISOString(),
 						resolvedAt: null,
+						resolution: null,
+						resolvedPayload: null,
 					});
 
 					await db.syncMetadata.put({

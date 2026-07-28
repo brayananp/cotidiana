@@ -33,6 +33,13 @@ export type SyncRuntimeState =
 	| "reauthentication_required"
 	| "error";
 
+export type ConflictResolution =
+	| "accept_remote"
+	| "keep_local"
+	| "duplicate_local"
+	| "merge_manual"
+	| "discard_local";
+
 export type SyncOperationRecord = {
 	id: string;
 	userId: string;
@@ -82,6 +89,8 @@ export type SyncConflictRecord = {
 	reason: string;
 	createdAt: string;
 	resolvedAt: string | null;
+	resolution: ConflictResolution | null;
+	resolvedPayload: Json;
 };
 
 export type SyncRuntimeRecord = {

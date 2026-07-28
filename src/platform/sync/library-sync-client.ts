@@ -1,18 +1,18 @@
-import type { BookNoteRecord } from "@/modules/library/infrastructure/local/book-note.record";
 import type { BookRecord } from "@/modules/library/infrastructure/local/book.record";
+import type { BookNoteRecord } from "@/modules/library/infrastructure/local/book-note.record";
 import { registerCurrentDevice } from "@/platform/auth/device.functions";
 import { getLocalDatabase } from "@/platform/database/local-database";
-import { withLibrarySyncLock } from "./library-sync-lock-client";
 import {
 	pullLibraryChangesFn,
 	pushLibraryOperationsFn,
 } from "./library-sync.functions";
 import {
-	bookNoteSyncSnapshotSchema,
-	bookSyncSnapshotSchema,
 	type BookNoteSyncSnapshot,
 	type BookSyncSnapshot,
+	bookNoteSyncSnapshotSchema,
+	bookSyncSnapshotSchema,
 } from "./library-sync.schemas";
+import { withLibrarySyncLock } from "./library-sync-lock-client";
 import { getNextRetryAt } from "./retry-policy";
 import {
 	createSyncCursorId,
@@ -471,6 +471,8 @@ async function storePushConflict(
 				reason: result.reason,
 				createdAt: now,
 				resolvedAt: null,
+				resolution: null,
+				resolvedPayload: null,
 			});
 		},
 	);
@@ -556,12 +558,14 @@ async function applyPullChanges(
 
 	await db.transaction(
 		"rw",
-		db.books,
-		db.bookNotes,
-		db.syncOperations,
-		db.syncMetadata,
-		db.syncCursors,
-		db.syncConflicts,
+		[
+			db.books,
+			db.bookNotes,
+			db.syncOperations,
+			db.syncMetadata,
+			db.syncCursors,
+			db.syncConflicts,
+		],
 		async () => {
 			for (const change of changes) {
 				const unresolved = await db.syncOperations
@@ -585,6 +589,8 @@ async function applyPullChanges(
 						reason: "REMOTE_CHANGE_WITH_LOCAL_OPERATIONS",
 						createdAt: new Date().toISOString(),
 						resolvedAt: null,
+						resolution: null,
+						resolvedPayload: null,
 					});
 
 					await db.syncMetadata.put({

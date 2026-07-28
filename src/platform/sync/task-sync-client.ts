@@ -20,13 +20,6 @@ const MAX_BATCHES_PER_RUN = 10;
 const registeredDevicesThisSession = new Set<string>();
 const STALE_PROCESSING_MS = 2 * 60_000;
 
-type PushTaskResponse = { results: PushOperationResult[] };
-type PullTaskResponse = {
-	changes: PullTaskChange[];
-	nextCursor: number;
-	hasMore: boolean;
-};
-
 export type RunTaskSyncInput = {
 	userId: string;
 	deviceId: string;
@@ -63,12 +56,12 @@ export async function runTaskSync(
 				}
 
 				try {
-					const response = (await pushTaskOperationsFn({
+					const response = await pushTaskOperationsFn({
 						data: {
 							deviceId: input.deviceId,
 							operations: operations.map(toPushInput),
 						},
-					})) as PushTaskResponse;
+					});
 
 					const summary = await applyPushResults(
 						input.userId,
@@ -89,13 +82,13 @@ export async function runTaskSync(
 			for (let batch = 0; batch < MAX_BATCHES_PER_RUN; batch += 1) {
 				const cursor = await getTaskCursor(input.userId);
 
-				const response = (await pullTaskChangesFn({
+				const response = await pullTaskChangesFn({
 					data: {
 						deviceId: input.deviceId,
 						cursor,
 						limit: PULL_BATCH_SIZE,
 					},
-				})) as PullTaskResponse;
+				});
 
 				const summary = await applyPullChanges(
 					input.userId,
@@ -339,7 +332,7 @@ async function applyPushResults(
 				}
 
 				if (result.status === "applied") {
-					await applySuccessfulPush(userId, claimed, result);
+					await applySuccessfulPush(claimed, result);
 					applied += 1;
 					continue;
 				}
@@ -374,7 +367,6 @@ async function applyPushResults(
 }
 
 async function applySuccessfulPush(
-	_userId: string,
 	claimed: SyncOperationRecord,
 	result: Extract<PushOperationResult, { status: "applied" }>,
 ): Promise<void> {
@@ -453,6 +445,8 @@ async function preservePushConflict(
 		reason: result.reason,
 		createdAt: now,
 		resolvedAt: null,
+		resolution: null,
+		resolvedPayload: null,
 	});
 
 	await db.syncMetadata.put({
@@ -561,6 +555,8 @@ async function applyPullChanges(
 						reason: "REMOTE_CHANGE_WITH_LOCAL_PENDING",
 						createdAt: now,
 						resolvedAt: null,
+						resolution: null,
+						resolvedPayload: null,
 					});
 
 					for (const operation of localOperations) {

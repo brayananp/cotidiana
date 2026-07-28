@@ -1,5 +1,14 @@
 import { authClient } from "#/platform/auth/auth-client";
 import { PwaBootstrap, PwaUpdatePrompt } from "#/platform/pwa";
+import { MenuIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+	Link,
+	Outlet,
+	useNavigate,
+	useRouteContext,
+} from "@tanstack/react-router";
+import { useState } from "react";
 import { TaskSyncStatus } from "@/shared/components/TaskSyncStatus";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -19,10 +28,6 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/shared/components/ui/sheet";
-import { MenuIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { useState } from "react";
 
 const navItems = [
 	{ to: "/dashboard", label: "Dashboard" },
@@ -76,7 +81,7 @@ export function AppShell() {
 
 				<div className="flex items-center gap-2">
 					<TaskSyncStatus userId={session?.user.id} />
-					<PwaBootstrap/>
+					<PwaBootstrap />
 					<PwaUpdatePrompt />
 					<AccessBanner mode={access.mode} />
 
@@ -110,6 +115,14 @@ export function AppShell() {
 									</DropdownMenuLabel>
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									render={
+										<Link to="/settings/sync">
+											{/* <SettingsIcon className="mr-2 h-4 w-4" /> */}
+											<span>Configuración</span>
+										</Link>
+									}
+								></DropdownMenuItem>
 								<DropdownMenuItem onClick={() => void handleSignOut()}>
 									Cerrar sesión
 								</DropdownMenuItem>
@@ -164,50 +177,40 @@ export function AppShell() {
 
 function AccessBanner({
 	mode,
-  }: {
+}: {
 	mode:
-	  | 'remote_authenticated'
-	  | 'local_offline'
-	  | 'local_remote_unavailable'
-	  | 'reauthentication_required'
-	  | 'unauthenticated'
-  }) {
-	if (
-	  mode === 'remote_authenticated'
-	) {
-	  return null
+		| "remote_authenticated"
+		| "local_offline"
+		| "local_remote_unavailable"
+		| "reauthentication_required"
+		| "unauthenticated";
+}) {
+	if (mode === "remote_authenticated") {
+		return null;
 	}
-  
+
 	const message = {
-	  local_offline:
-		'Trabajando sin conexión. Los cambios se sincronizarán cuando vuelva Internet.',
-  
-	  local_remote_unavailable:
-		'Turso o el servidor no están disponibles. Puedes continuar trabajando localmente.',
-  
-	  reauthentication_required:
-		'La sesión remota expiró. Puedes trabajar localmente, pero debes iniciar sesión para sincronizar.',
-  
-	  unauthenticated:
-		'No existe una sesión activa.',
-	}[mode]
-  
+		local_offline:
+			"Trabajando sin conexión. Los cambios se sincronizarán cuando vuelva Internet.",
+
+		local_remote_unavailable:
+			"Turso o el servidor no están disponibles. Puedes continuar trabajando localmente.",
+
+		reauthentication_required:
+			"La sesión remota expiró. Puedes trabajar localmente, pero debes iniciar sesión para sincronizar.",
+
+		unauthenticated: "No existe una sesión activa.",
+	}[mode];
+
 	return (
-	  <div
-		role="status"
-		className="flex items-center justify-between gap-4 border-b bg-muted px-6 py-2 text-sm"
-	  >
-		<span>{message}</span>
-  
-		{mode ===
-		  'reauthentication_required' && (
-		  <Link
-			to="/login"
-			className="font-medium underline"
-		  >
-			Iniciar sesión
-		  </Link>
-		)}
-	  </div>
-	)
-  }
+		<output className="flex items-center justify-between gap-4 border-b bg-muted px-6 py-2 text-sm">
+			<span>{message}</span>
+
+			{mode === "reauthentication_required" && (
+				<Link to="/login" className="font-medium underline">
+					Iniciar sesión
+				</Link>
+			)}
+		</output>
+	);
+}
