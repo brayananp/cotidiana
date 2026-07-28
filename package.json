@@ -2,6 +2,15 @@
   "name": "cotidiana",
   "private": true,
   "type": "module",
+  "version": "0.1.0",
+  "description": "A modern web application for managing your daily tasks and habits.",
+  "author": "Brayan Alexis Nuñez <brayalexis.30@gmail.com>",
+  "license": "private",
+  "homepage": "https://github.com/brayananp/cotidiana",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brayananp/cotidiana.git"
+  },
   "imports": {
     "#/*": "./src/*"
   },
