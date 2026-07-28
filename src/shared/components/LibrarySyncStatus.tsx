@@ -1,5 +1,5 @@
 import { requestLibrarySync } from "#/platform/sync/library-sync-events-client";
-import { useLibrarySyncStatus } from "@/platform/sync/use-library-sync-status";
+import { useLibrarySyncStatus } from "#/platform/sync/use-library-sync-status";
 
 export function LibrarySyncStatus({ userId }: { userId: string | undefined }) {
 	const status = useLibrarySyncStatus(userId);

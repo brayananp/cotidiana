@@ -15,6 +15,7 @@ const PERIODIC_SYNC_MS = 60_000;
 export function LibrarySyncBootstrap({ access }: { access: AppAccess }) {
 	const router = useRouter();
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <>
 	useEffect(() => {
 		const identity = access.localIdentity;
 

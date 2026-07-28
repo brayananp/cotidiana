@@ -1,3 +1,5 @@
+import { LibrarySyncBootstrap } from "#/platform/sync/LibrarySyncBootstrap";
+import { LibrarySyncStatus } from "#/shared/components/LibrarySyncStatus";
 import { ResponsiveDialog } from "#/shared/components/responsive-dialog";
 import {
 	Empty,
@@ -39,7 +41,13 @@ export function LibraryPage() {
 	}
 
 	return (
-		<LibraryContent userId={identity.userId} deviceId={identity.deviceId} />
+		<>
+			<LibrarySyncStatus
+				userId={identity.userId || access.remoteSession?.user.id}
+			/>
+			<LibrarySyncBootstrap access={access} />
+			<LibraryContent userId={identity.userId} deviceId={identity.deviceId} />
+		</>
 	);
 }
 

@@ -2,7 +2,7 @@ import type { BookNoteRecord } from "@/modules/library/infrastructure/local/book
 import type { BookRecord } from "@/modules/library/infrastructure/local/book.record";
 import { registerCurrentDevice } from "@/platform/auth/device.functions";
 import { getLocalDatabase } from "@/platform/database/local-database";
-import { withLibrarySyncLock } from "./library-sync-lock.client";
+import { withLibrarySyncLock } from "./library-sync-lock-client";
 import {
 	pullLibraryChangesFn,
 	pushLibraryOperationsFn,
