@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -15,6 +14,8 @@ import {
 } from "@/shared/components/ui/drawer";
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { cn } from "@/shared/lib/utils";
+import type { ReactNode } from "react";
+import { ScrollArea } from "./ui/scroll-area";
 
 type ResponsiveDialogProps = {
 	open: boolean;
@@ -45,20 +46,22 @@ export function ResponsiveDialog({
 							<DialogDescription>{description}</DialogDescription>
 						)}
 					</DialogHeader>
-					{children}
+					<ScrollArea className="h-[calc(100vh-200px)]">{children}</ScrollArea>
 				</DialogContent>
 			</Dialog>
 		);
 	}
 
 	return (
-		<Drawer open={open} onOpenChange={onOpenChange}>
+		<Drawer open={open} onOpenChange={onOpenChange} showSwipeHandle>
 			<DrawerContent>
 				<DrawerHeader>
 					<DrawerTitle>{title}</DrawerTitle>
 					{description && <DrawerDescription>{description}</DrawerDescription>}
 				</DrawerHeader>
-				<div className={cn("px-4 pb-6", contentClassName)}>{children}</div>
+				<ScrollArea className="h-[calc(100vh-200px)] p-6 ">
+					{children}
+				</ScrollArea>
 			</DrawerContent>
 		</Drawer>
 	);
