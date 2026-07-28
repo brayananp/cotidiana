@@ -45,7 +45,6 @@ export async function getLocalSecurityProfile(
 		updatedAt: now,
 	};
 
-	await db.localSecurityProfiles.put(created);
 	return created;
 }
 

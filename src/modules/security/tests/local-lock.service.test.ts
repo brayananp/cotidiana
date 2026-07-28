@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import Dexie from "dexie";
+import Dexie, { liveQuery } from "dexie";
 import {
 	afterAll,
 	afterEach,
@@ -12,7 +12,10 @@ import {
 } from "vitest";
 import { getLocalDatabase } from "@/platform/database/local-database";
 import { createPinVerifier } from "../application/local-lock.crypto-client";
-import { changeLocalPin } from "../application/local-lock.service-client";
+import {
+	changeLocalPin,
+	getLocalSecurityProfile,
+} from "../application/local-lock.service-client";
 
 const DATABASE_NAME = "personal-productivity-os";
 const USER_ID = "security-test-user";
@@ -42,6 +45,29 @@ afterAll(async () => {
 });
 
 describe("local lock service", () => {
+	it("reads an absent profile from liveQuery without a write transaction", async () => {
+		const result = await new Promise<unknown>((resolve) => {
+			const subscription = liveQuery(() =>
+				getLocalSecurityProfile(USER_ID),
+			).subscribe({
+				next: (profile) => {
+					subscription.unsubscribe();
+					resolve(profile);
+				},
+				error: (error) => {
+					subscription.unsubscribe();
+					resolve(error);
+				},
+			});
+		});
+
+		expect(result).not.toBeInstanceOf(Error);
+		expect(result).toMatchObject({
+			id: USER_ID,
+			enabled: false,
+		});
+	});
+
 	it("applies progressive waiting to failed PIN changes", async () => {
 		const verifier = await createPinVerifier("482915", 1_000);
 		const now = new Date().toISOString();

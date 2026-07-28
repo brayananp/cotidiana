@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import Dexie from "dexie";
+import Dexie, { liveQuery } from "dexie";
 import {
 	afterAll,
 	afterEach,
@@ -42,6 +42,31 @@ afterAll(async () => {
 });
 
 describe("settings synchronization", () => {
+	it("reads default settings from liveQuery without a write transaction", async () => {
+		const result = await new Promise<unknown>((resolve) => {
+			const subscription = liveQuery(() =>
+				settingsDependencies.getOrDefault(USER_ID),
+			).subscribe({
+				next: (settings) => {
+					subscription.unsubscribe();
+					resolve(settings);
+				},
+				error: (error) => {
+					subscription.unsubscribe();
+					resolve(error);
+				},
+			});
+		});
+
+		expect(result).not.toBeInstanceOf(Error);
+		expect(result).toMatchObject({
+			id: USER_ID,
+			userId: USER_ID,
+			startPage: "dashboard",
+		});
+		expect(await getLocalDatabase().userSettings.get(USER_ID)).toBeUndefined();
+	});
+
 	it("stores preferences and queues one user_settings operation atomically", async () => {
 		await settingsDependencies.update(USER_ID, DEVICE_ID, {
 			locale: "es",

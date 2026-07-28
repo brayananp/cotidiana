@@ -10,13 +10,13 @@ export const settingsDependencies = {
 	repository,
 	writeStore,
 
-	async getOrCreate(userId: string) {
-		return repository.getOrCreate(userId);
+	async getOrDefault(userId: string) {
+		return repository.getOrDefault(userId);
 	},
 
 	async update(userId: string, deviceId: string, rawInput: unknown) {
 		const input = userSettingsFormSchema.parse(rawInput);
-		const existing = await repository.getOrCreate(userId);
+		const existing = await repository.getOrDefault(userId);
 		const updated = updateUserSettingsEntity(existing, input);
 
 		await writeStore.commit(
