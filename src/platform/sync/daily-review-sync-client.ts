@@ -77,7 +77,7 @@ export async function runDailyReviewSync(input: RunDailyReviewSyncInput) {
 				const response = await pullDailyReviewChangesFn({
 					data: { deviceId: input.deviceId, cursor, limit: PULL_BATCH_SIZE },
 				});
-				const result = await applyPullChanges(
+				const result = await applyDailyReviewPullChanges(
 					input.userId,
 					response.changes,
 					response.nextCursor,
@@ -414,7 +414,7 @@ async function getCursor(userId: string): Promise<number> {
 	return cursor?.cursor ?? 0;
 }
 
-async function applyPullChanges(
+export async function applyDailyReviewPullChanges(
 	userId: string,
 	changes: PullDailyReviewChange[],
 	nextCursor: number,
@@ -433,6 +433,16 @@ async function applyPullChanges(
 		async () => {
 			for (const change of changes) {
 				const snapshot = dailyReviewSyncSnapshotSchema.parse(change.payload);
+				const metadata = await db.syncMetadata.get(
+					createSyncMetadataId("daily_review", change.entityId),
+				);
+				if (
+					metadata?.remoteVersion !== null &&
+					metadata?.remoteVersion !== undefined &&
+					change.version <= metadata.remoteVersion
+				) {
+					continue;
+				}
 				const unresolved = await db.syncOperations
 					.where("[entityType+entityId]")
 					.equals(["daily_review", change.entityId])

@@ -10,7 +10,21 @@ import {
 	it,
 	vi,
 } from "vitest";
+
+vi.mock("@/platform/auth/device.functions", () => ({
+	registerCurrentDevice: vi.fn(),
+}));
+vi.mock("@/platform/sync/daily-review-sync.functions", () => ({
+	pullDailyReviewChangesFn: vi.fn(),
+	pushDailyReviewOperationsFn: vi.fn(),
+}));
+
 import { getLocalDatabase } from "@/platform/database/local-database";
+import { applyDailyReviewPullChanges } from "@/platform/sync/daily-review-sync-client";
+import {
+	createSyncCursorId,
+	createSyncMetadataId,
+} from "@/platform/sync/sync.types";
 import { dashboardDependencies } from "../infrastructure/dashboard.dependencies";
 
 const DATABASE_NAME = "personal-productivity-os";
@@ -84,5 +98,88 @@ describe("daily review persistence", () => {
 			operation: "create",
 			status: "pending",
 		});
+	});
+
+	it("ignora el eco remoto ya reconocido cuando hay una edición posterior pendiente", async () => {
+		const db = getLocalDatabase();
+		const entityId = `${USER_ID}:${REVIEW_DATE}`;
+		const remoteSnapshot = {
+			id: entityId,
+			userId: USER_ID,
+			reviewDate: REVIEW_DATE,
+			mood: 3 as const,
+			energy: 3 as const,
+			productivity: 3 as const,
+			wins: null,
+			blockers: null,
+			notes: "Versión remota confirmada",
+			tomorrowPriorities: [],
+			completedAt: null,
+			createdAt: "2026-07-28T08:00:00.000Z",
+			updatedAt: "2026-07-28T08:00:00.000Z",
+			deletedAt: null,
+			version: 1,
+		};
+		const localSnapshot = {
+			...remoteSnapshot,
+			notes: "Edición local posterior",
+			updatedAt: "2026-07-28T08:01:00.000Z",
+			version: 2,
+		};
+
+		await db.dailyReviews.put(localSnapshot);
+		await db.syncMetadata.put({
+			id: createSyncMetadataId("daily_review", entityId),
+			entityType: "daily_review",
+			entityId,
+			localVersion: 2,
+			remoteVersion: 1,
+			state: "pending",
+			lastSyncedAt: "2026-07-28T08:00:00.000Z",
+			lastError: null,
+			updatedAt: "2026-07-28T08:01:00.000Z",
+		});
+		await db.syncOperations.put({
+			id: "00000000-0000-4000-8000-000000000003",
+			userId: USER_ID,
+			deviceId: DEVICE_ID,
+			entityType: "daily_review",
+			entityId,
+			operation: "update",
+			payload: localSnapshot,
+			baseVersion: 1,
+			status: "pending",
+			attempts: 0,
+			nextRetryAt: null,
+			lastError: null,
+			createdAt: "2026-07-28T08:01:00.000Z",
+			updatedAt: "2026-07-28T08:01:00.000Z",
+		});
+
+		const result = await applyDailyReviewPullChanges(
+			USER_ID,
+			[
+				{
+					sequence: 7,
+					entityType: "daily_review",
+					entityId,
+					operation: "create",
+					version: 1,
+					payload: remoteSnapshot,
+					createdAt: "2026-07-28T08:00:00.000Z",
+				},
+			],
+			7,
+		);
+
+		expect(result).toEqual({ applied: 0, conflicts: 0 });
+		expect(await db.dailyReviews.get(entityId)).toMatchObject({
+			notes: "Edición local posterior",
+			version: 2,
+		});
+		expect(await db.syncConflicts.count()).toBe(0);
+		expect(
+			await db.syncCursors.get(createSyncCursorId(USER_ID, "daily_review")),
+		).toMatchObject({ cursor: 7 });
 	});
 });

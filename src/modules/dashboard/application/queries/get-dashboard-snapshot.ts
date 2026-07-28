@@ -127,8 +127,8 @@ export function calculateDashboardMetrics(
 		const dayBlocks = blocks.filter(
 			(block) =>
 				block.status === "completed" &&
-				new Date(block.updatedAt) >= dayStart &&
-				new Date(block.updatedAt) < dayEnd,
+				new Date(block.startAt) >= dayStart &&
+				new Date(block.startAt) < dayEnd,
 		);
 		const dayFocusMinutes = sumDuration(
 			dayBlocks.filter(

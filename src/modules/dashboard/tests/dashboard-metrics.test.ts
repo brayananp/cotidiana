@@ -75,4 +75,45 @@ describe("DashboardMetrics", () => {
 		expect(metrics.today.focusMinutes).toBe(60);
 		expect(metrics.library.averageProgress).toBe(50);
 	});
+
+	it("atribuye un bloque completado al día en que ocurrió", () => {
+		const now = new Date("2026-07-28T12:00:00.000Z");
+		const metrics = calculateDashboardMetrics(
+			{
+				tasks: [],
+				timeBlocks: [
+					{
+						id: "b1",
+						userId: "u1",
+						taskId: null,
+						title: "Focus",
+						notes: null,
+						kind: "focus",
+						status: "completed",
+						startAt: "2026-07-27T09:00:00.000Z",
+						endAt: "2026-07-27T10:00:00.000Z",
+						createdAt: "2026-07-27T08:00:00.000Z",
+						updatedAt: "2026-07-28T10:00:00.000Z",
+						deletedAt: null,
+						version: 2,
+					},
+				],
+				calendarEvents: [],
+				reminders: [],
+				books: [],
+				dailyReviews: [],
+			},
+			now,
+		);
+
+		const monday = metrics.week.points.find(
+			(point) => point.date === "2026-07-27",
+		);
+		const tuesday = metrics.week.points.find(
+			(point) => point.date === "2026-07-28",
+		);
+
+		expect(monday).toMatchObject({ completedBlocks: 1, focusMinutes: 60 });
+		expect(tuesday).toMatchObject({ completedBlocks: 0, focusMinutes: 0 });
+	});
 });
