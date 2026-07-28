@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { activateWaitingWorker } from "./pwa-state.client";
+import { activateWaitingWorker } from "./pwa-state-client";
 import { usePwaStatus } from "./use-pwa-status";
 
 export function PwaUpdatePrompt() {

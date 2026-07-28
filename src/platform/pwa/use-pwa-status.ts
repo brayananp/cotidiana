@@ -6,7 +6,7 @@ import {
   getPwaServerSnapshot,
   getPwaSnapshot,
   subscribePwaState,
-} from './pwa-state.client'
+} from './pwa-state-client'
 
 export function usePwaStatus() {
   return useSyncExternalStore(

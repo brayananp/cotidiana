@@ -7,7 +7,7 @@ import {
 	setInstallPrompt,
 	setPwaError,
 	setWaitingWorker,
-} from "./pwa-state.client";
+} from "./pwa-state-client";
 import type { BeforeInstallPromptEvent } from "./pwa.types";
 
 const UPDATE_INTERVAL_MS = 60 * 60_000;

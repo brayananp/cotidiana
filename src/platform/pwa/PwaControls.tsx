@@ -1,4 +1,4 @@
-import { activateWaitingWorker, requestPwaInstall } from "./pwa-state.client";
+import { activateWaitingWorker, requestPwaInstall } from "./pwa-state-client";
 import { usePwaStatus } from "./use-pwa-status";
 
 export function PwaControls() {
