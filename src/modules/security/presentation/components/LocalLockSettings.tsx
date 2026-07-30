@@ -16,6 +16,7 @@ export function LocalLockSettings({ userId }: { userId: string }) {
 	const [confirmPin, setConfirmPin] = useState("");
 	const [currentPin, setCurrentPin] = useState("");
 	const [newPin, setNewPin] = useState("");
+	const [pinToRemove, setPinToRemove] = useState("");
 	const [autoLockMinutes, setAutoLockMinutes] = useState(15);
 	const [lockOnBackground, setLockOnBackground] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export function LocalLockSettings({ userId }: { userId: string }) {
 			setConfirmPin("");
 			setCurrentPin("");
 			setNewPin("");
+			setPinToRemove("");
 		} catch (caught) {
 			setError(mapSecurityError(caught));
 		} finally {
@@ -102,6 +104,15 @@ export function LocalLockSettings({ userId }: { userId: string }) {
 				</div>
 			) : (
 				<div className="space-y-5">
+					<div className="rounded-xl bg-muted/50 px-4 py-3 text-sm">
+						<p className="font-medium">El PIN está activo en este navegador.</p>
+						<p className="mt-1 text-muted-foreground">
+							Desactivar la inactividad solo elimina el temporizador. El PIN
+							seguirá protegiendo los bloqueos manuales y al ocultar la
+							aplicación.
+						</p>
+					</div>
+
 					<div className="grid gap-3 md:grid-cols-2">
 						<AutoLockSelect
 							value={profile.autoLockMinutes}
@@ -138,16 +149,6 @@ export function LocalLockSettings({ userId }: { userId: string }) {
 						</label>
 					</div>
 
-					<div className="grid gap-3 md:grid-cols-2">
-						<PinInput
-							label="PIN actual"
-							value={currentPin}
-							onChange={setCurrentPin}
-						/>
-
-						<PinInput label="PIN nuevo" value={newPin} onChange={setNewPin} />
-					</div>
-
 					<div className="flex flex-wrap gap-2">
 						<button
 							type="button"
@@ -156,6 +157,25 @@ export function LocalLockSettings({ userId }: { userId: string }) {
 						>
 							Bloquear ahora
 						</button>
+					</div>
+
+					<div className="space-y-3 rounded-xl border p-4">
+						<div>
+							<h3 className="font-medium">Cambiar PIN</h3>
+							<p className="text-sm text-muted-foreground">
+								Confirma tu PIN actual antes de crear uno nuevo.
+							</p>
+						</div>
+
+						<div className="grid gap-3 md:grid-cols-2">
+							<PinInput
+								label="PIN actual"
+								value={currentPin}
+								onChange={setCurrentPin}
+							/>
+
+							<PinInput label="PIN nuevo" value={newPin} onChange={setNewPin} />
+						</div>
 
 						<button
 							type="button"
@@ -173,21 +193,37 @@ export function LocalLockSettings({ userId }: { userId: string }) {
 						>
 							Cambiar PIN
 						</button>
+					</div>
+
+					<div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+						<div>
+							<h3 className="font-medium text-destructive">Eliminar PIN</h3>
+							<p className="text-sm text-muted-foreground">
+								Desactiva por completo el bloqueo local en este navegador.
+								Después de eliminarlo, la pantalla de PIN no volverá a aparecer.
+							</p>
+						</div>
+
+						<PinInput
+							label="PIN actual para confirmar"
+							value={pinToRemove}
+							onChange={setPinToRemove}
+						/>
 
 						<button
 							type="button"
-							disabled={busy || currentPin.length < 6}
+							disabled={busy || pinToRemove.length < 6}
 							className="rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive disabled:opacity-50"
 							onClick={() =>
 								void run(() =>
 									disableLocalPin({
 										userId,
-										currentPin,
+										currentPin: pinToRemove,
 									}),
 								)
 							}
 						>
-							Desactivar bloqueo
+							Eliminar PIN de este navegador
 						</button>
 					</div>
 				</div>

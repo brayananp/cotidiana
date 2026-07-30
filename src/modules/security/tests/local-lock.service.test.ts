@@ -14,8 +14,13 @@ import { getLocalDatabase } from "@/platform/database/local-database";
 import { createPinVerifier } from "../application/local-lock.crypto-client";
 import {
 	changeLocalPin,
+	disableLocalPin,
 	getLocalSecurityProfile,
 } from "../application/local-lock.service-client";
+import {
+	getAppLockSnapshot,
+	initializeAppLock,
+} from "../application/local-lock-state-client";
 
 const DATABASE_NAME = "personal-productivity-os";
 const USER_ID = "security-test-user";
@@ -107,5 +112,52 @@ describe("local lock service", () => {
 			(await getLocalDatabase().localSecurityProfiles.get(USER_ID))
 				?.lockedUntil,
 		).not.toBeNull();
+	});
+
+	it("removes the PIN verifier and unlocks the app when local locking is disabled", async () => {
+		const verifier = await createPinVerifier("482915", 1_000);
+		const now = new Date().toISOString();
+
+		await getLocalDatabase().localSecurityProfiles.put({
+			id: USER_ID,
+			userId: USER_ID,
+			enabled: true,
+			pinSalt: verifier.salt,
+			pinHash: verifier.hash,
+			pinIterations: verifier.iterations,
+			failedAttempts: 0,
+			lockedUntil: null,
+			autoLockMinutes: 0,
+			lockOnBackground: false,
+			lastUnlockedAt: now,
+			createdAt: now,
+			updatedAt: now,
+		});
+
+		initializeAppLock({
+			userId: USER_ID,
+			enabled: true,
+			lockedUntil: null,
+		});
+
+		await disableLocalPin({
+			userId: USER_ID,
+			currentPin: "482915",
+		});
+
+		expect(
+			await getLocalDatabase().localSecurityProfiles.get(USER_ID),
+		).toMatchObject({
+			enabled: false,
+			pinSalt: null,
+			pinHash: null,
+			failedAttempts: 0,
+			lockedUntil: null,
+			lastUnlockedAt: null,
+		});
+		expect(getAppLockSnapshot()).toMatchObject({
+			enabled: false,
+			locked: false,
+		});
 	});
 });
