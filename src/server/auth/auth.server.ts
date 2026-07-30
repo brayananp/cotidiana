@@ -1,13 +1,20 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
+import { env } from "@/env";
 import * as authSchema from "@/server/database/schema/auth.schema";
 import { db } from "../database/client.server";
+import { createBetterAuthRuntimeConfig } from "./auth-config-server";
+
+const runtimeConfig = createBetterAuthRuntimeConfig({
+	baseURL: env.BETTER_AUTH_URL,
+	secret: env.BETTER_AUTH_SECRET,
+	appOrigin: env.APP_ORIGIN,
+});
 
 export const auth = betterAuth({
 	appName: "Personal Productivity OS",
-	baseURL: process.env.SERVER_URL ?? "",
-	secret: process.env.BETTER_AUTH_SECRET ?? "",
+	...runtimeConfig,
 	database: drizzleAdapter(db, {
 		provider: "sqlite",
 		schema: authSchema,
@@ -23,7 +30,6 @@ export const auth = betterAuth({
 			generateId: "uuid",
 		},
 	},
-	trustedOrigins: [process.env.APP_ORIGIN ?? "http://localhost:3000"],
 	plugins: [tanstackStartCookies()],
 });
 

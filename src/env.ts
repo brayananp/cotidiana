@@ -3,10 +3,10 @@ import { z } from "zod";
 
 export const env = createEnv({
 	server: {
-		SERVER_URL: z.url().optional(),
-		BETTER_AUTH_URL: z.url().optional(),
-		BETTER_AUTH_SECRET: z.string().min(1),
-		APP_ORIGIN: z.url().optional(),
+		SERVER_URL: z.url().default("http://localhost:3000"),
+		BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
+		BETTER_AUTH_SECRET: z.string().min(32),
+		APP_ORIGIN: z.url().default("http://localhost:3000"),
 		TURSO_DATABASE_URL: z.string(),
 		TURSO_AUTH_TOKEN: z.string(),
 	},
@@ -26,11 +26,10 @@ export const env = createEnv({
 	 * `process.env` or `import.meta.env`.
 	 */
 	runtimeEnv: {
-		BETTER_AUTH_URL:
-			process.env.BETTER_AUTH_URL ?? "http://localhost:3000/api/auth",
-		BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "secret",
-		APP_ORIGIN: process.env.APP_ORIGIN ?? "http://localhost:3000",
-		SERVER_URL: process.env.SERVER_URL ?? "http://localhost:3000",
+		BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+		BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+		APP_ORIGIN: process.env.APP_ORIGIN,
+		SERVER_URL: process.env.SERVER_URL,
 		TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL ?? "",
 		TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN ?? "",
 	},

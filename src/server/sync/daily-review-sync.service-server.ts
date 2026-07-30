@@ -22,6 +22,7 @@ import {
 	processedOperation,
 	syncChange,
 } from "@/server/database/schema/sync.schema";
+import { attemptVersionedWrite } from "./versioned-write-server";
 
 export async function pushDailyReviewOperations(
 	rawInput: PushDailyReviewInput,
@@ -206,15 +207,44 @@ async function applyWrite(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(dailyReview)
-		.set(snapshotToUpdate(snapshot))
-		.where(
-			and(
-				eq(dailyReview.id, operation.entityId),
-				eq(dailyReview.userId, userId),
-			),
-		);
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(dailyReview)
+				.set(snapshotToUpdate(snapshot))
+				.where(
+					and(
+						eq(dailyReview.id, operation.entityId),
+						eq(dailyReview.userId, userId),
+						eq(dailyReview.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () => {
+			const [current] = await transaction
+				.select()
+				.from(dailyReview)
+				.where(
+					and(
+						eq(dailyReview.id, operation.entityId),
+						eq(dailyReview.userId, userId),
+					),
+				)
+				.limit(1);
+
+			return current ?? null;
+		},
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(operation, "VERSION_MISMATCH", toSnapshot(write.current))
+			: rejected(operation, "DAILY_REVIEW_NOT_FOUND");
+	}
 	await appendChange(transaction, userId, "update", snapshot, now);
 	return applied(operation, snapshot);
 }
@@ -246,14 +276,45 @@ async function applyDelete(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(dailyReview)
-		.set({
-			deletedAt: new Date(parsed.data.deletedAt),
-			updatedAt: now,
-			version: snapshot.version,
-		})
-		.where(and(eq(dailyReview.id, remote.id), eq(dailyReview.userId, userId)));
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(dailyReview)
+				.set({
+					deletedAt: new Date(parsed.data.deletedAt),
+					updatedAt: now,
+					version: snapshot.version,
+				})
+				.where(
+					and(
+						eq(dailyReview.id, remote.id),
+						eq(dailyReview.userId, userId),
+						eq(dailyReview.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () => {
+			const [current] = await transaction
+				.select()
+				.from(dailyReview)
+				.where(
+					and(eq(dailyReview.id, remote.id), eq(dailyReview.userId, userId)),
+				)
+				.limit(1);
+
+			return current ?? null;
+		},
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(operation, "VERSION_MISMATCH", toSnapshot(write.current))
+			: rejected(operation, "DAILY_REVIEW_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "delete", snapshot, now);
 	return applied(operation, snapshot);

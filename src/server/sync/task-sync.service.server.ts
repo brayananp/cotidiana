@@ -21,6 +21,7 @@ import {
 	syncChange,
 } from "@/server/database/schema/sync.schema";
 import { task } from "@/server/database/schema/task.schema";
+import { attemptVersionedWrite } from "./versioned-write-server";
 
 export async function pushTaskOperations(rawInput: PushTasksInput): Promise<{
 	results: PushOperationResult[];
@@ -221,10 +222,39 @@ async function applyUpdate(
 		version: remoteTask.version + 1,
 	};
 
-	await transaction
-		.update(task)
-		.set(snapshotToUpdate(snapshot))
-		.where(and(eq(task.id, operation.entityId), eq(task.userId, userId)));
+	const write = await attemptVersionedWrite({
+		expectedVersion: remoteTask.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(task)
+				.set(snapshotToUpdate(snapshot))
+				.where(
+					and(
+						eq(task.id, operation.entityId),
+						eq(task.userId, userId),
+						eq(task.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () => {
+			const [current] = await transaction
+				.select()
+				.from(task)
+				.where(and(eq(task.id, operation.entityId), eq(task.userId, userId)))
+				.limit(1);
+
+			return current ?? null;
+		},
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(operation, "VERSION_MISMATCH", toSnapshot(write.current))
+			: rejected(operation, "TASK_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "update", snapshot, now);
 
@@ -268,14 +298,43 @@ async function applyDelete(
 	};
 
 	const deletedAtValue = snapshot.deletedAt;
-	await transaction
-		.update(task)
-		.set({
-			deletedAt: deletedAtValue ? new Date(deletedAtValue) : undefined,
-			updatedAt: now,
-			version: snapshot.version,
-		})
-		.where(and(eq(task.id, operation.entityId), eq(task.userId, userId)));
+	const write = await attemptVersionedWrite({
+		expectedVersion: remoteTask.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(task)
+				.set({
+					deletedAt: deletedAtValue ? new Date(deletedAtValue) : undefined,
+					updatedAt: now,
+					version: snapshot.version,
+				})
+				.where(
+					and(
+						eq(task.id, operation.entityId),
+						eq(task.userId, userId),
+						eq(task.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () => {
+			const [current] = await transaction
+				.select()
+				.from(task)
+				.where(and(eq(task.id, operation.entityId), eq(task.userId, userId)))
+				.limit(1);
+
+			return current ?? null;
+		},
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(operation, "VERSION_MISMATCH", toSnapshot(write.current))
+			: rejected(operation, "TASK_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "delete", snapshot, now);
 

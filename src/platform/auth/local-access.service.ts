@@ -9,6 +9,13 @@ import { LocalAccessRepository } from "./local-access.repository";
 
 const repository = new LocalAccessRepository();
 
+type SignOutDependencies = {
+	browserReportsOnline: () => boolean;
+	isServerAvailable: () => Promise<boolean>;
+	signOutRemote: () => Promise<{ error?: unknown }>;
+	disableLocalAccess: (remoteSignOutPending: boolean) => Promise<void>;
+};
+
 export async function provisionLocalAccess(
 	session: AuthClientSession,
 ): Promise<void> {
@@ -40,19 +47,36 @@ export async function provisionLocalAccess(
 	});
 }
 
-export async function signOutCurrentDevice(): Promise<void> {
-	const online = browserReportsOnline();
-	const serverAvailable = online && (await isServerAvailable());
+export function createSignOutCurrentDevice(
+	dependencies: SignOutDependencies,
+): () => Promise<void> {
+	return async () => {
+		let remoteSignOutPending = true;
 
-	let remoteSignOutPending = true;
+		try {
+			const online = dependencies.browserReportsOnline();
+			const serverAvailable =
+				online && (await dependencies.isServerAvailable());
 
-	if (serverAvailable) {
-		const result = await authClient.signOut();
-		remoteSignOutPending = Boolean(result.error);
-	}
+			if (serverAvailable) {
+				const result = await dependencies.signOutRemote();
+				remoteSignOutPending = Boolean(result.error);
+			}
+		} catch {
+			remoteSignOutPending = true;
+		}
 
-	await repository.disableActiveLocalAccess(remoteSignOutPending);
+		await dependencies.disableLocalAccess(remoteSignOutPending);
+	};
 }
+
+export const signOutCurrentDevice = createSignOutCurrentDevice({
+	browserReportsOnline,
+	isServerAvailable,
+	signOutRemote: () => authClient.signOut(),
+	disableLocalAccess: (remoteSignOutPending) =>
+		repository.disableActiveLocalAccess(remoteSignOutPending),
+});
 
 export async function flushPendingRemoteSignOut(): Promise<void> {
 	const hasPending = await repository.hasPendingRemoteSignOut();

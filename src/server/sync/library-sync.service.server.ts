@@ -24,6 +24,7 @@ import {
 	processedOperation,
 	syncChange,
 } from "@/server/database/schema/sync.schema";
+import { attemptVersionedWrite } from "./versioned-write-server";
 
 export async function pushLibraryOperations(
 	rawInput: PushLibraryInput,
@@ -106,6 +107,34 @@ export async function pullLibraryChanges(rawInput: PullLibraryInput): Promise<{
 
 type SyncTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+async function loadBook(
+	transaction: SyncTransaction,
+	userId: string,
+	entityId: string,
+) {
+	const [row] = await transaction
+		.select()
+		.from(book)
+		.where(and(eq(book.id, entityId), eq(book.userId, userId)))
+		.limit(1);
+
+	return row;
+}
+
+async function loadBookNote(
+	transaction: SyncTransaction,
+	userId: string,
+	entityId: string,
+) {
+	const [row] = await transaction
+		.select()
+		.from(bookNote)
+		.where(and(eq(bookNote.id, entityId), eq(bookNote.userId, userId)))
+		.limit(1);
+
+	return row;
+}
+
 async function processOperation(
 	transaction: SyncTransaction,
 	userId: string,
@@ -151,11 +180,7 @@ async function processBookOperation(
 	userId: string,
 	operation: PushLibraryOperationInput,
 ): Promise<PushOperationResult> {
-	const [remote] = await transaction
-		.select()
-		.from(book)
-		.where(and(eq(book.id, operation.entityId), eq(book.userId, userId)))
-		.limit(1);
+	const remote = await loadBook(transaction, userId, operation.entityId);
 
 	if (operation.operation === "delete") {
 		return deleteBook(transaction, userId, operation, remote);
@@ -214,10 +239,32 @@ async function processBookOperation(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(book)
-		.set(bookSnapshotToUpdate(snapshot))
-		.where(and(eq(book.id, operation.entityId), eq(book.userId, userId)));
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(book)
+				.set(bookSnapshotToUpdate(snapshot))
+				.where(
+					and(
+						eq(book.id, operation.entityId),
+						eq(book.userId, userId),
+						eq(book.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () =>
+			(await loadBook(transaction, userId, operation.entityId)) ?? null,
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(operation, "VERSION_MISMATCH", toBookSnapshot(write.current))
+			: rejected(operation, "BOOK_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "book", "update", snapshot, now);
 
@@ -229,13 +276,7 @@ async function processBookNoteOperation(
 	userId: string,
 	operation: PushLibraryOperationInput,
 ): Promise<PushOperationResult> {
-	const [remote] = await transaction
-		.select()
-		.from(bookNote)
-		.where(
-			and(eq(bookNote.id, operation.entityId), eq(bookNote.userId, userId)),
-		)
-		.limit(1);
+	const remote = await loadBookNote(transaction, userId, operation.entityId);
 
 	if (operation.operation === "delete") {
 		return deleteBookNote(transaction, userId, operation, remote);
@@ -326,12 +367,36 @@ async function processBookNoteOperation(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(bookNote)
-		.set(bookNoteSnapshotToUpdate(snapshot))
-		.where(
-			and(eq(bookNote.id, operation.entityId), eq(bookNote.userId, userId)),
-		);
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(bookNote)
+				.set(bookNoteSnapshotToUpdate(snapshot))
+				.where(
+					and(
+						eq(bookNote.id, operation.entityId),
+						eq(bookNote.userId, userId),
+						eq(bookNote.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () =>
+			(await loadBookNote(transaction, userId, operation.entityId)) ?? null,
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(
+					operation,
+					"VERSION_MISMATCH",
+					toBookNoteSnapshot(write.current),
+				)
+			: rejected(operation, "BOOK_NOTE_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "book_note", "update", snapshot, now);
 
@@ -367,14 +432,36 @@ async function deleteBook(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(book)
-		.set({
-			deletedAt: now,
-			updatedAt: now,
-			version: snapshot.version,
-		})
-		.where(and(eq(book.id, remote.id), eq(book.userId, userId)));
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(book)
+				.set({
+					deletedAt: now,
+					updatedAt: now,
+					version: snapshot.version,
+				})
+				.where(
+					and(
+						eq(book.id, remote.id),
+						eq(book.userId, userId),
+						eq(book.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () =>
+			(await loadBook(transaction, userId, remote.id)) ?? null,
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(operation, "VERSION_MISMATCH", toBookSnapshot(write.current))
+			: rejected(operation, "BOOK_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "book", "delete", snapshot, now);
 
@@ -410,14 +497,40 @@ async function deleteBookNote(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(bookNote)
-		.set({
-			deletedAt: now,
-			updatedAt: now,
-			version: snapshot.version,
-		})
-		.where(and(eq(bookNote.id, remote.id), eq(bookNote.userId, userId)));
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(bookNote)
+				.set({
+					deletedAt: now,
+					updatedAt: now,
+					version: snapshot.version,
+				})
+				.where(
+					and(
+						eq(bookNote.id, remote.id),
+						eq(bookNote.userId, userId),
+						eq(bookNote.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () =>
+			(await loadBookNote(transaction, userId, remote.id)) ?? null,
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(
+					operation,
+					"VERSION_MISMATCH",
+					toBookNoteSnapshot(write.current),
+				)
+			: rejected(operation, "BOOK_NOTE_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "book_note", "delete", snapshot, now);
 

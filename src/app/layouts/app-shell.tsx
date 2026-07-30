@@ -1,5 +1,5 @@
 import { AppLockGate } from "#/modules/security";
-import { authClient } from "#/platform/auth/auth-client";
+import { signOutCurrentDevice } from "#/platform/auth/local-access.service";
 import { ReminderSchedulerBootstrap } from "#/platform/notifications/ReminderSchedulerBootstrap";
 import { PwaBootstrap, PwaControls, PwaUpdatePrompt } from "#/platform/pwa";
 import { GlobalSyncBootstrap } from "#/platform/sync";
@@ -48,6 +48,7 @@ export function AppShell() {
 		from: "/_app",
 	});
 	const session = access.remoteSession;
+	const profile = session?.user ?? access.localIdentity;
 
 	const NavLinks = ({ onClick }: { onClick?: () => void }) => (
 		<>
@@ -65,7 +66,7 @@ export function AppShell() {
 		</>
 	);
 	const handleSignOut = async () => {
-		await authClient.signOut();
+		await signOutCurrentDevice();
 		await navigate({ to: "/login", replace: true });
 	};
 	return (
@@ -99,16 +100,16 @@ export function AppShell() {
 							<PwaControls />
 							<AccessBanner mode={access.mode} />
 
-							{session ? (
+							{profile ? (
 								<DropdownMenu>
 									<DropdownMenuTrigger
 										render={
 											<Button variant="ghost" size="sm" className="gap-2">
 												<div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-													{session.user.name?.charAt(0).toUpperCase() ?? "U"}
+													{profile.name?.charAt(0).toUpperCase() ?? "U"}
 												</div>
 												<span className="hidden text-sm sm:inline">
-													{session.user.name}
+													{profile.name}
 												</span>
 											</Button>
 										}
@@ -118,10 +119,10 @@ export function AppShell() {
 											<DropdownMenuLabel className="font-normal">
 												<div className="flex flex-col gap-1">
 													<span className="font-medium text-foreground">
-														{session.user.name}
+														{profile.name}
 													</span>
 													<span className="text-xs text-muted-foreground">
-														{session.user.email}
+														{profile.email}
 													</span>
 												</div>
 											</DropdownMenuLabel>
@@ -157,10 +158,10 @@ export function AppShell() {
 									<div className="mt-6 flex flex-col gap-4 px-2">
 										<NavLinks onClick={() => setMobileOpen(false)} />
 										<Separator />
-										{session && (
+										{profile && (
 											<div className="flex flex-col gap-2">
 												<span className="text-sm text-muted-foreground">
-													{session.user.email}
+													{profile.email}
 												</span>
 												<Button
 													variant="destructive"

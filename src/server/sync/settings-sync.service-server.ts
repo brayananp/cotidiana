@@ -19,6 +19,7 @@ import {
 	syncChange,
 } from "@/server/database/schema/sync.schema";
 import { userSettings } from "@/server/database/schema/user-settings.schema";
+import { attemptVersionedWrite } from "./versioned-write-server";
 
 export async function pushSettingsOperations(
 	rawInput: PushSettingsInput,
@@ -115,19 +116,47 @@ export async function pushSettingsOperations(
 					version: remote.version + 1,
 				};
 
-				await transaction
-					.update(userSettings)
-					.set(snapshotToUpdate(snapshot))
-					.where(eq(userSettings.userId, session.user.id));
+				const write = await attemptVersionedWrite({
+					expectedVersion: remote.version,
+					writeIfVersion: async (expectedVersion) => {
+						const [updated] = await transaction
+							.update(userSettings)
+							.set(snapshotToUpdate(snapshot))
+							.where(
+								and(
+									eq(userSettings.userId, session.user.id),
+									eq(userSettings.version, expectedVersion),
+								),
+							)
+							.returning();
 
-				await appendChange(
-					transaction,
-					session.user.id,
-					"update",
-					snapshot,
-					now,
-				);
-				result = applied(operation, snapshot);
+						return updated ?? null;
+					},
+					loadCurrent: async () => {
+						const [current] = await transaction
+							.select()
+							.from(userSettings)
+							.where(eq(userSettings.userId, session.user.id))
+							.limit(1);
+
+						return current ?? null;
+					},
+				});
+
+				if (write.status === "stale") {
+					result = write.current
+						? conflict(operation, "VERSION_MISMATCH", toSnapshot(write.current))
+						: rejected(operation, "USER_SETTINGS_NOT_FOUND");
+				} else {
+					await appendChange(
+						transaction,
+						session.user.id,
+						"update",
+						snapshot,
+						now,
+					);
+					result = applied(operation, snapshot);
+				}
 			}
 
 			await transaction.insert(processedOperation).values({

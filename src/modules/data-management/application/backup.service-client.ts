@@ -174,6 +174,10 @@ export async function importDataBackup(input: {
 		input.payload,
 	);
 
+	if (payload.sourceUserId !== input.userId) {
+		throw new Error("BACKUP_USER_MISMATCH");
+	}
+
 	const safetyBackup =
 		input.createSafetyBackup === false
 			? null

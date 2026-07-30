@@ -22,6 +22,7 @@ import {
 	processedOperation,
 	syncChange,
 } from "@/server/database/schema/sync.schema";
+import { attemptVersionedWrite } from "./versioned-write-server";
 
 export async function pushReminderOperations(
 	rawInput: PushReminderInput,
@@ -210,12 +211,41 @@ async function processWrite(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(reminder)
-		.set(snapshotToUpdate(snapshot))
-		.where(
-			and(eq(reminder.id, operation.entityId), eq(reminder.userId, userId)),
-		);
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(reminder)
+				.set(snapshotToUpdate(snapshot))
+				.where(
+					and(
+						eq(reminder.id, operation.entityId),
+						eq(reminder.userId, userId),
+						eq(reminder.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () => {
+			const [current] = await transaction
+				.select()
+				.from(reminder)
+				.where(
+					and(eq(reminder.id, operation.entityId), eq(reminder.userId, userId)),
+				)
+				.limit(1);
+
+			return current ?? null;
+		},
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(operation, "VERSION_MISMATCH", toSnapshot(write.current))
+			: rejected(operation, "REMINDER_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "update", snapshot, now);
 
@@ -252,15 +282,44 @@ async function processDelete(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(reminder)
-		.set({
-			deletedAt: now,
-			nextTriggerAt: null,
-			updatedAt: now,
-			version: snapshot.version,
-		})
-		.where(and(eq(reminder.id, remote.id), eq(reminder.userId, userId)));
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(reminder)
+				.set({
+					deletedAt: now,
+					nextTriggerAt: null,
+					updatedAt: now,
+					version: snapshot.version,
+				})
+				.where(
+					and(
+						eq(reminder.id, remote.id),
+						eq(reminder.userId, userId),
+						eq(reminder.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () => {
+			const [current] = await transaction
+				.select()
+				.from(reminder)
+				.where(and(eq(reminder.id, remote.id), eq(reminder.userId, userId)))
+				.limit(1);
+
+			return current ?? null;
+		},
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(operation, "VERSION_MISMATCH", toSnapshot(write.current))
+			: rejected(operation, "REMINDER_NOT_FOUND");
+	}
 
 	await appendChange(transaction, userId, "delete", snapshot, now);
 

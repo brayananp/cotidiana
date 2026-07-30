@@ -144,6 +144,34 @@ describe("data management", () => {
 		expect(await db.syncOperations.count()).toBe(1);
 	});
 
+	it("rejects a backup from another profile before changing local data", async () => {
+		const existingTask = createTask({
+			id: TASK_IDS.user,
+			title: "User 2 task",
+			userId: "user-2",
+		});
+		const importedTask = createTask({
+			id: TASK_IDS.user,
+			title: "User 1 task",
+			userId: USER_ID,
+		});
+
+		await db.tasks.put(existingTask);
+
+		await expect(
+			importDataBackup({
+				payload: createBackupPayload([importedTask]),
+				userId: "user-2",
+				deviceId: DEVICE_ID,
+				mode: "merge",
+				createSafetyBackup: false,
+			}),
+		).rejects.toThrow("BACKUP_USER_MISMATCH");
+
+		expect(await db.tasks.get(existingTask.id)).toEqual(existingTask);
+		expect(await db.syncOperations.count()).toBe(0);
+	});
+
 	it("accepts the remote side of a conflict and records the resolution", async () => {
 		const localTask = createTask({ id: TASK_IDS.conflicted, title: "Local" });
 		const remoteTask = createTask({

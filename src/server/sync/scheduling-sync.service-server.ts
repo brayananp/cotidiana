@@ -27,6 +27,7 @@ import {
 	processedOperation,
 	syncChange,
 } from "@/server/database/schema/sync.schema";
+import { attemptVersionedWrite } from "./versioned-write-server";
 
 export async function pushSchedulingOperations(
 	rawInput: PushSchedulingInput,
@@ -107,6 +108,36 @@ export async function pullSchedulingChanges(
 
 type SyncTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+async function loadTimeBlock(
+	transaction: SyncTransaction,
+	userId: string,
+	entityId: string,
+) {
+	const [row] = await transaction
+		.select()
+		.from(timeBlock)
+		.where(and(eq(timeBlock.id, entityId), eq(timeBlock.userId, userId)))
+		.limit(1);
+
+	return row;
+}
+
+async function loadCalendarEvent(
+	transaction: SyncTransaction,
+	userId: string,
+	entityId: string,
+) {
+	const [row] = await transaction
+		.select()
+		.from(calendarEvent)
+		.where(
+			and(eq(calendarEvent.id, entityId), eq(calendarEvent.userId, userId)),
+		)
+		.limit(1);
+
+	return row;
+}
+
 async function processOperation(
 	transaction: SyncTransaction,
 	userId: string,
@@ -152,13 +183,7 @@ async function processTimeBlockOperation(
 	userId: string,
 	operation: PushSchedulingOperationInput,
 ): Promise<PushOperationResult> {
-	const [remote] = await transaction
-		.select()
-		.from(timeBlock)
-		.where(
-			and(eq(timeBlock.id, operation.entityId), eq(timeBlock.userId, userId)),
-		)
-		.limit(1);
+	const remote = await loadTimeBlock(transaction, userId, operation.entityId);
 
 	if (operation.operation === "delete") {
 		return deleteTimeBlock(transaction, userId, operation, remote);
@@ -262,12 +287,36 @@ async function processTimeBlockOperation(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(timeBlock)
-		.set(timeBlockSnapshotToUpdate(snapshot))
-		.where(
-			and(eq(timeBlock.id, operation.entityId), eq(timeBlock.userId, userId)),
-		);
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(timeBlock)
+				.set(timeBlockSnapshotToUpdate(snapshot))
+				.where(
+					and(
+						eq(timeBlock.id, operation.entityId),
+						eq(timeBlock.userId, userId),
+						eq(timeBlock.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () =>
+			(await loadTimeBlock(transaction, userId, operation.entityId)) ?? null,
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(
+					operation,
+					"VERSION_MISMATCH",
+					toTimeBlockSnapshot(write.current),
+				)
+			: rejected(operation, "TIME_BLOCK_NOT_FOUND");
+	}
 
 	await appendChange(
 		transaction,
@@ -286,16 +335,11 @@ async function processCalendarEventOperation(
 	userId: string,
 	operation: PushSchedulingOperationInput,
 ): Promise<PushOperationResult> {
-	const [remote] = await transaction
-		.select()
-		.from(calendarEvent)
-		.where(
-			and(
-				eq(calendarEvent.id, operation.entityId),
-				eq(calendarEvent.userId, userId),
-			),
-		)
-		.limit(1);
+	const remote = await loadCalendarEvent(
+		transaction,
+		userId,
+		operation.entityId,
+	);
 
 	if (operation.operation === "delete") {
 		return deleteCalendarEvent(transaction, userId, operation, remote);
@@ -397,15 +441,37 @@ async function processCalendarEventOperation(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(calendarEvent)
-		.set(calendarEventSnapshotToUpdate(snapshot))
-		.where(
-			and(
-				eq(calendarEvent.id, operation.entityId),
-				eq(calendarEvent.userId, userId),
-			),
-		);
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(calendarEvent)
+				.set(calendarEventSnapshotToUpdate(snapshot))
+				.where(
+					and(
+						eq(calendarEvent.id, operation.entityId),
+						eq(calendarEvent.userId, userId),
+						eq(calendarEvent.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () =>
+			(await loadCalendarEvent(transaction, userId, operation.entityId)) ??
+			null,
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(
+					operation,
+					"VERSION_MISMATCH",
+					toCalendarEventSnapshot(write.current),
+				)
+			: rejected(operation, "CALENDAR_EVENT_NOT_FOUND");
+	}
 
 	await appendChange(
 		transaction,
@@ -448,14 +514,40 @@ async function deleteTimeBlock(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(timeBlock)
-		.set({
-			deletedAt: now,
-			updatedAt: now,
-			version: snapshot.version,
-		})
-		.where(and(eq(timeBlock.id, remote.id), eq(timeBlock.userId, userId)));
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(timeBlock)
+				.set({
+					deletedAt: now,
+					updatedAt: now,
+					version: snapshot.version,
+				})
+				.where(
+					and(
+						eq(timeBlock.id, remote.id),
+						eq(timeBlock.userId, userId),
+						eq(timeBlock.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () =>
+			(await loadTimeBlock(transaction, userId, remote.id)) ?? null,
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(
+					operation,
+					"VERSION_MISMATCH",
+					toTimeBlockSnapshot(write.current),
+				)
+			: rejected(operation, "TIME_BLOCK_NOT_FOUND");
+	}
 
 	await appendChange(
 		transaction,
@@ -502,16 +594,40 @@ async function deleteCalendarEvent(
 		version: remote.version + 1,
 	};
 
-	await transaction
-		.update(calendarEvent)
-		.set({
-			deletedAt: now,
-			updatedAt: now,
-			version: snapshot.version,
-		})
-		.where(
-			and(eq(calendarEvent.id, remote.id), eq(calendarEvent.userId, userId)),
-		);
+	const write = await attemptVersionedWrite({
+		expectedVersion: remote.version,
+		writeIfVersion: async (expectedVersion) => {
+			const [updated] = await transaction
+				.update(calendarEvent)
+				.set({
+					deletedAt: now,
+					updatedAt: now,
+					version: snapshot.version,
+				})
+				.where(
+					and(
+						eq(calendarEvent.id, remote.id),
+						eq(calendarEvent.userId, userId),
+						eq(calendarEvent.version, expectedVersion),
+					),
+				)
+				.returning();
+
+			return updated ?? null;
+		},
+		loadCurrent: async () =>
+			(await loadCalendarEvent(transaction, userId, remote.id)) ?? null,
+	});
+
+	if (write.status === "stale") {
+		return write.current
+			? conflict(
+					operation,
+					"VERSION_MISMATCH",
+					toCalendarEventSnapshot(write.current),
+				)
+			: rejected(operation, "CALENDAR_EVENT_NOT_FOUND");
+	}
 
 	await appendChange(
 		transaction,
