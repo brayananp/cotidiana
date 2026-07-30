@@ -121,6 +121,7 @@ export function createSyncCoordinator<const TDomain extends string>(
 			await Promise.resolve();
 
 			if (pending.size === 0) {
+				currentDrain = null;
 				return { runs };
 			}
 
@@ -142,15 +143,7 @@ export function createSyncCoordinator<const TDomain extends string>(
 			return currentDrain;
 		}
 
-		let scheduledDrain: Promise<SyncDrainReport<TDomain>>;
-
-		scheduledDrain = Promise.resolve()
-			.then(drain)
-			.finally(() => {
-				if (currentDrain === scheduledDrain) {
-					currentDrain = null;
-				}
-			});
+		const scheduledDrain = Promise.resolve().then(drain);
 
 		currentDrain = scheduledDrain;
 

@@ -92,4 +92,31 @@ describe("global sync indicator model", () => {
 		expect(getManualSyncTarget(status)).toEqual(["tasks", "library"]);
 		expect(getManualSyncTarget(createStatus({}))).toBe("all");
 	});
+
+	it("targets a domain with conflicts even when it has no pending operations", () => {
+		const status = createStatus({
+			domains: [
+				{
+					domain: "tasks",
+					state: "idle",
+					pending: 0,
+					rejected: 0,
+					conflicts: 1,
+					lastCompletedAt: null,
+					lastError: null,
+				},
+				{
+					domain: "library",
+					state: "idle",
+					pending: 0,
+					rejected: 0,
+					conflicts: 0,
+					lastCompletedAt: null,
+					lastError: null,
+				},
+			],
+		});
+
+		expect(getManualSyncTarget(status)).toEqual(["tasks"]);
+	});
 });

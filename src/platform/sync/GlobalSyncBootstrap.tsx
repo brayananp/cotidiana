@@ -107,6 +107,7 @@ export function GlobalSyncBootstrap({ access }: { access: AppAccess }) {
 		} satisfies Record<SyncDomain, SyncEngine>;
 		const coordinator = createSyncCoordinator({ engines });
 		const observedDrains = new WeakSet<Promise<unknown>>();
+		let disposed = false;
 
 		const observeDrain = (
 			drain: ReturnType<typeof coordinator.request>,
@@ -127,16 +128,24 @@ export function GlobalSyncBootstrap({ access }: { access: AppAccess }) {
 		const request = (target: SyncRequestTarget): void => {
 			void ensureRemoteDeviceRegistered(syncInput)
 				.then(() => {
+					if (disposed) {
+						return;
+					}
+
 					observeDrain(coordinator.request(target));
 				})
 				.catch(async (error: unknown) => {
+					if (disposed) {
+						return;
+					}
+
 					initializedSyncSessions.delete(sessionKey);
 					await setAllRuntimeStates(userId, "error", getErrorMessage(error));
 					await router.invalidate();
 				});
 		};
 
-		return startSyncLifecycle({
+		const stopLifecycle = startSyncLifecycle({
 			canSynchronize: access.canSynchronize,
 			isOnline: browserReportsOnline,
 			request,
@@ -168,6 +177,11 @@ export function GlobalSyncBootstrap({ access }: { access: AppAccess }) {
 			intervalMs: PERIODIC_SYNC_MS,
 			requestOnStart,
 		});
+
+		return () => {
+			disposed = true;
+			stopLifecycle();
+		};
 	}, [
 		access.canSynchronize,
 		access.requiresReauthentication,

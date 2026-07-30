@@ -33,7 +33,13 @@ export function getManualSyncTarget(
 	status: GlobalSyncStatus,
 ): readonly SyncDomain[] | "all" {
 	const domains = status.domains
-		.filter((domain) => domain.state === "error" || domain.pending > 0)
+		.filter(
+			(domain) =>
+				domain.state === "error" ||
+				domain.pending > 0 ||
+				domain.conflicts > 0 ||
+				domain.rejected > 0,
+		)
 		.map((domain) => domain.domain);
 
 	return domains.length > 0 ? domains : "all";

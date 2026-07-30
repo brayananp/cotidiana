@@ -92,7 +92,9 @@ export function AppShell() {
 						</div>
 
 						<div className="flex items-center gap-2">
-							<GlobalSyncIndicator userId={session?.user.id} />
+							<GlobalSyncIndicator
+								userId={access.localIdentity?.userId ?? session?.user.id}
+							/>
 
 							<PwaControls />
 							<AccessBanner mode={access.mode} />

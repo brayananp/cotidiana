@@ -138,6 +138,11 @@ function DomainStatusRow({
 						? ` · ${formatSyncTime(status.lastCompletedAt)}`
 						: ""}
 				</p>
+				{status.lastError ? (
+					<p className="truncate text-xs text-destructive">
+						{status.lastError}
+					</p>
+				) : null}
 			</div>
 
 			{canRetry ? (
