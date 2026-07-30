@@ -1,11 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { DashboardPage } from "@/modules/dashboard";
+import { DashboardSkeleton } from "@/modules/dashboard/presentation/components/DashboardSkeleton";
 
 export const Route = createFileRoute("/_app/dashboard")({
 	component: DashboardPage,
-	pendingComponent: () => (
-		<div className="flex items-center justify-center p-12 text-muted-foreground">
-			Cargando…
-		</div>
-	),
+	pendingComponent: DashboardSkeleton,
 });

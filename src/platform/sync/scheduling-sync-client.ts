@@ -12,7 +12,6 @@ import {
 	type TimeBlockSyncSnapshot,
 	timeBlockSyncSnapshotSchema,
 } from "./scheduling-sync.schemas";
-import { withSchedulingSyncLock } from "./sync-lock-client";
 import {
 	createSyncCursorId,
 	createSyncMetadataId,
@@ -23,6 +22,7 @@ import {
 	type SyncOperationRecord,
 	type SyncRuntimeState,
 } from "./sync.types";
+import { withSchedulingSyncLock } from "./sync-lock-client";
 
 const ENTITY_TYPES = ["time_block", "calendar_event"] as const;
 

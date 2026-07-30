@@ -6,7 +6,6 @@ import {
 	pushSettingsOperationsFn,
 } from "./settings-sync.functions";
 import { userSettingsSyncSnapshotSchema } from "./settings-sync.schemas";
-import { withSettingsSyncLock } from "./sync-lock-client";
 import {
 	createSyncCursorId,
 	createSyncMetadataId,
@@ -15,6 +14,7 @@ import {
 	type SyncOperationRecord,
 	type SyncRuntimeState,
 } from "./sync.types";
+import { withSettingsSyncLock } from "./sync-lock-client";
 
 const STALE_PROCESSING_MS = 2 * 60_000;
 

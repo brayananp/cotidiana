@@ -5,7 +5,6 @@ import {
 	pushDailyReviewOperationsFn,
 } from "./daily-review-sync.functions";
 import { dailyReviewSyncSnapshotSchema } from "./daily-review-sync.schemas";
-import { withDailyReviewSyncLock } from "./sync-lock-client";
 import { getNextRetryAt } from "./retry-policy";
 import {
 	createSyncCursorId,
@@ -16,6 +15,7 @@ import {
 	type SyncOperationRecord,
 	type SyncRuntimeState,
 } from "./sync.types";
+import { withDailyReviewSyncLock } from "./sync-lock-client";
 
 const PUSH_BATCH_SIZE = 50;
 const PULL_BATCH_SIZE = 100;

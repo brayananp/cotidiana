@@ -26,7 +26,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "TanStack Start Starter",
+				title: "Cotidiana",
 			},
 		],
 		links: [
@@ -45,9 +45,7 @@ function NotFound() {
 		<div className="flex min-h-screen items-center justify-center p-4">
 			<div className="text-center">
 				<h1 className="text-4xl font-bold mb-4">404</h1>
-				<p className="text-lg text-muted-foreground mb-4">
-					Page not found
-				</p>
+				<p className="text-lg text-muted-foreground mb-4">Page not found</p>
 			</div>
 		</div>
 	);

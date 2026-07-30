@@ -5,7 +5,6 @@ import {
 	pushReminderOperationsFn,
 } from "./reminder-sync.functions";
 import { reminderSyncSnapshotSchema } from "./reminder-sync.schemas";
-import { withReminderSyncLock } from "./sync-lock-client";
 import { getNextRetryAt } from "./retry-policy";
 import {
 	createSyncCursorId,
@@ -16,6 +15,7 @@ import {
 	type SyncOperationRecord,
 	type SyncRuntimeState,
 } from "./sync.types";
+import { withReminderSyncLock } from "./sync-lock-client";
 
 const PUSH_BATCH_SIZE = 50;
 const PULL_BATCH_SIZE = 100;

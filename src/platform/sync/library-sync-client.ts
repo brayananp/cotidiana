@@ -11,7 +11,6 @@ import {
 	bookNoteSyncSnapshotSchema,
 	bookSyncSnapshotSchema,
 } from "./library-sync.schemas";
-import { withLibrarySyncLock } from "./sync-lock-client";
 import { getNextRetryAt } from "./retry-policy";
 import {
 	createSyncCursorId,
@@ -23,6 +22,7 @@ import {
 	type SyncOperationRecord,
 	type SyncRuntimeState,
 } from "./sync.types";
+import { withLibrarySyncLock } from "./sync-lock-client";
 
 const ENTITY_TYPES = ["book", "book_note"] as const;
 

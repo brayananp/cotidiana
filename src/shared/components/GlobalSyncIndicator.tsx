@@ -1,3 +1,5 @@
+import { RefreshIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Link } from "@tanstack/react-router";
 import {
 	getDomainLabel,
@@ -33,17 +35,18 @@ export function GlobalSyncIndicator({
 	if (!status) {
 		return (
 			<span
-				className="h-7 w-7 animate-pulse rounded-full bg-muted"
+				className="h-8 w-8 animate-pulse rounded-full bg-muted"
 				aria-hidden
 			/>
 		);
 	}
 
 	const label = getGlobalSyncLabel(status);
+	const isSyncing = status.state === "syncing";
 	const actionsDisabled =
 		status.state === "offline" ||
 		status.state === "reauthentication_required" ||
-		status.state === "syncing";
+		isSyncing;
 
 	return (
 		<Popover>
@@ -52,13 +55,20 @@ export function GlobalSyncIndicator({
 					<Button
 						variant="outline"
 						size="sm"
-						className="max-w-40 gap-2 overflow-hidden px-2.5"
+						className="h-8 max-w-44 gap-2 overflow-hidden px-2.5 text-xs font-medium"
 						aria-label={`Estado de sincronización: ${label}`}
 					>
 						<StatusDot state={status.state} />
 						<span className="hidden truncate sm:inline" aria-live="polite">
 							{label}
 						</span>
+						{isSyncing && (
+							<HugeiconsIcon
+								icon={RefreshIcon}
+								size={12}
+								className="animate-spin text-sky-500"
+							/>
+						)}
 					</Button>
 				}
 			/>
@@ -69,11 +79,11 @@ export function GlobalSyncIndicator({
 				className="w-[min(22rem,calc(100vw-2rem))] gap-3 rounded-2xl p-3"
 			>
 				<PopoverHeader className="px-1 pt-1">
-					<PopoverTitle className="flex items-center gap-2">
+					<PopoverTitle className="flex items-center gap-2 text-sm font-semibold">
 						<StatusDot state={status.state} />
 						{label}
 					</PopoverTitle>
-					<PopoverDescription>
+					<PopoverDescription className="text-xs">
 						Un solo ciclo mantiene al día todas tus secciones.
 					</PopoverDescription>
 				</PopoverHeader>
@@ -93,10 +103,16 @@ export function GlobalSyncIndicator({
 						type="button"
 						variant="secondary"
 						size="sm"
+						className="h-8 gap-1.5 text-xs"
 						disabled={actionsDisabled}
 						onClick={() => requestSync(getManualSyncTarget(status))}
 					>
-						Sincronizar ahora
+						<HugeiconsIcon
+							icon={RefreshIcon}
+							size={13}
+							className={isSyncing ? "animate-spin" : ""}
+						/>
+						<span>Sincronizar ahora</span>
 					</Button>
 
 					<Link
