@@ -1,23 +1,13 @@
-import type { BookRecord } from "@/modules/library/infrastructure/local/book.record";
-import type { ReminderRecord } from "@/modules/reminders/infrastructure/local/reminder.record";
-import type { CalendarEventRecord } from "@/modules/scheduling/infrastructure/local/calendar-event.record";
-import type { TimeBlockRecord } from "@/modules/scheduling/infrastructure/local/time-block.record";
-import type { TaskRecord } from "@/modules/tasks/infrastructure/local/task.record";
 import { localDateKey } from "../../domain/daily-review";
 import type {
 	DashboardDayPoint,
 	DashboardMetrics,
 } from "../../domain/dashboard-metrics";
-import type { DailyReviewRecord } from "../../infrastructure/local/daily-review.record";
-
-export type DashboardSourceData = {
-	tasks: TaskRecord[];
-	timeBlocks: TimeBlockRecord[];
-	calendarEvents: CalendarEventRecord[];
-	reminders: ReminderRecord[];
-	books: BookRecord[];
-	dailyReviews: DailyReviewRecord[];
-};
+import type {
+	DashboardReminder,
+	DashboardSourceData,
+	DashboardTask,
+} from "../../domain/dashboard-source";
 
 export function calculateDashboardMetrics(
 	source: DashboardSourceData,
@@ -35,7 +25,7 @@ export function calculateDashboardMetrics(
 	const blocks = source.timeBlocks.filter((block) => !block.deletedAt);
 	const events = source.calendarEvents.filter((event) => !event.deletedAt);
 	const reminders = source.reminders.filter((reminder) => !reminder.deletedAt);
-	const books = source.books.filter((book) => !book.deletedAt);
+	const readingBooks = source.readingBooks.filter((book) => !book.deletedAt);
 	const reviews = source.dailyReviews.filter((review) => !review.deletedAt);
 
 	const completedToday = tasks.filter((task) =>
@@ -100,7 +90,7 @@ export function calculateDashboardMetrics(
 
 	const dueReminders = reminders
 		.filter(
-			(reminder): reminder is ReminderRecord & { nextTriggerAt: string } =>
+			(reminder): reminder is DashboardReminder & { nextTriggerAt: string } =>
 				(reminder.status === "scheduled" || reminder.status === "snoozed") &&
 				reminder.nextTriggerAt !== null &&
 				new Date(reminder.nextTriggerAt) >= now &&
@@ -175,7 +165,6 @@ export function calculateDashboardMetrics(
 			inRange(task.completedAt, weekStart, tomorrowStart),
 	);
 
-	const readingBooks = books.filter((book) => book.status === "reading");
 	const progressValues = readingBooks
 		.filter(
 			(book): book is typeof book & { pageCount: number } =>
@@ -215,7 +204,7 @@ export function calculateDashboardMetrics(
 		streak: calculateStreak(points),
 		library: {
 			reading: readingBooks.length,
-			completed: books.filter((book) => book.status === "completed").length,
+			completed: source.completedBookCount,
 			averageProgress: progressValues.length
 				? Math.round(
 						progressValues.reduce((sum, value) => sum + value, 0) /
@@ -298,8 +287,8 @@ const PRIORITY_WEIGHT: Record<string, number> = {
 };
 
 function comparePriorityTasks(
-	left: TaskRecord,
-	right: TaskRecord,
+	left: DashboardTask,
+	right: DashboardTask,
 	now: Date,
 ): number {
 	const leftOverdue = left.dueAt && new Date(left.dueAt) < now ? 1 : 0;

@@ -278,6 +278,10 @@ export class ProductivityLocalDatabase extends Dexie {
 			syncOperations:
 				"id, userId, deviceId, status, entityType, entityId, createdAt, nextRetryAt, [entityType+entityId], [status+createdAt], [userId+status]",
 		});
+		this.version(12).stores({
+			tasks:
+				"id, userId, status, priority, plannedAt, dueAt, completedAt, updatedAt, deletedAt, [userId+status], [userId+completedAt], [userId+updatedAt]",
+		});
 	}
 }
 
