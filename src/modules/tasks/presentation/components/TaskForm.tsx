@@ -10,6 +10,7 @@ import {
 	taskFormSchema,
 } from "@/modules/tasks/schemas/task-input.schema";
 import { Button } from "@/shared/components/ui/button";
+import { DateTimePicker } from "@/shared/components/ui/date-time-picker";
 import {
 	Field,
 	FieldError,
@@ -19,8 +20,6 @@ import {
 import { Input } from "@/shared/components/ui/input";
 import {
 	InputGroup,
-	InputGroupAddon,
-	InputGroupInput,
 	InputGroupTextarea,
 } from "@/shared/components/ui/input-group";
 import {
@@ -30,8 +29,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/shared/components/ui/select";
-import { Calendar01Icon, Clock01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 
 type TaskFormProps = {
 	context: TaskExecutionContext;
@@ -64,7 +61,7 @@ export function TaskForm({ context, task, onCompleted }: TaskFormProps) {
 
 	return (
 		<form
-			className="space-y-4"
+			className="space-y-4 px-3"
 			onSubmit={(event) => {
 				event.preventDefault();
 				event.stopPropagation();
@@ -118,6 +115,10 @@ export function TaskForm({ context, task, onCompleted }: TaskFormProps) {
 					{(field) => (
 						<FieldContainer label="Prioridad" errors={field.state.meta.errors}>
 							<Select
+								items={TASK_PRIORITIES.map((priority) => ({
+									value: priority,
+									label: taskPriorityLabels[priority],
+								}))}
 								value={field.state.value}
 								onValueChange={(value) => field.handleChange(value ?? "none")}
 							>
@@ -144,19 +145,13 @@ export function TaskForm({ context, task, onCompleted }: TaskFormProps) {
 								label="Fecha planificada"
 								errors={field.state.meta.errors}
 							>
-								<InputGroup>
-									<InputGroupAddon align="inline-start">
-										<HugeiconsIcon icon={Calendar01Icon} size={14} />
-									</InputGroupAddon>
-									<InputGroupInput
-										id={field.name}
-										type="datetime-local"
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(event) => field.handleChange(event.target.value)}
-										className="text-xs h-8"
-									/>
-								</InputGroup>
+								<DateTimePicker
+									id={field.name}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(val) => field.handleChange(val)}
+									placeholder="Planificar fecha…"
+								/>
 							</FieldContainer>
 						)}
 					</form.Field>
@@ -167,19 +162,13 @@ export function TaskForm({ context, task, onCompleted }: TaskFormProps) {
 								label="Fecha límite"
 								errors={field.state.meta.errors}
 							>
-								<InputGroup>
-									<InputGroupAddon align="inline-start">
-										<HugeiconsIcon icon={Clock01Icon} size={14} />
-									</InputGroupAddon>
-									<InputGroupInput
-										id={field.name}
-										type="datetime-local"
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(event) => field.handleChange(event.target.value)}
-										className="text-xs h-8"
-									/>
-								</InputGroup>
+								<DateTimePicker
+									id={field.name}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(val) => field.handleChange(val)}
+									placeholder="Fecha límite…"
+								/>
 							</FieldContainer>
 						)}
 					</form.Field>
