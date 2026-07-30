@@ -55,13 +55,12 @@ const navItems = [
 export function AppShell() {
 	const navigate = useNavigate();
 	const router = useRouter();
-
-	const { data: session, isPending } = authClient.useSession();
 	const [mobileOpen, setMobileOpen] = useState(false);
 
 	const { access } = useRouteContext({
 		from: "/_app",
 	});
+	const session = access.remoteSession;
 
 	useEffect(
 		() =>
@@ -128,9 +127,7 @@ export function AppShell() {
 							<PwaControls />
 							<AccessBanner mode={access.mode} />
 
-							{isPending ? (
-								<div className="h-8 w-20 animate-pulse rounded-2xl bg-muted" />
-							) : session ? (
+							{session ? (
 								<DropdownMenu>
 									<DropdownMenuTrigger
 										render={

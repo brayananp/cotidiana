@@ -1,18 +1,6 @@
 import { AppShell } from "#/app/layouts/app-shell";
 import { resolveAppAccess } from "#/platform/auth/app-access";
-import { TaskSyncBootstrap } from "#/platform/sync";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-
-function AppShellWrapper() {
-	const { access } = Route.useRouteContext();
-
-	return (
-		<>
-			<TaskSyncBootstrap access={access} />
-			<AppShell />
-		</>
-	);
-}
 
 export const Route = createFileRoute("/_app")({
 	ssr: false,
@@ -31,5 +19,5 @@ export const Route = createFileRoute("/_app")({
 			access,
 		};
 	},
-	component: AppShellWrapper,
+	component: AppShell,
 });
