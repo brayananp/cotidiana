@@ -5,7 +5,7 @@ import {
 	pushReminderOperationsFn,
 } from "./reminder-sync.functions";
 import { reminderSyncSnapshotSchema } from "./reminder-sync.schemas";
-import { withReminderSyncLock } from "./reminder-sync-lock-client";
+import { withReminderSyncLock } from "./sync-lock-client";
 import { getNextRetryAt } from "./retry-policy";
 import {
 	createSyncCursorId,
@@ -37,7 +37,7 @@ export type RunReminderSyncResult = {
 export async function runReminderSync(
 	input: RunReminderSyncInput,
 ): Promise<RunReminderSyncResult | null> {
-	return withReminderSyncLock(async () => {
+	return withReminderSyncLock(input, async () => {
 		await setRuntimeState(input.userId, "syncing", null, true);
 
 		try {

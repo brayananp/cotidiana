@@ -1,5 +1,5 @@
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { auth } from "./auth.server";
+import { auth } from "./auth-server";
 
 export async function getServerSession() {
 	return auth.api.getSession({

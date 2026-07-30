@@ -12,8 +12,8 @@ export const registerCurrentDevice = createServerFn({
 	.handler(async ({ data }) => {
 		const [{ requireServerSession }, { registerDeviceForUser }] =
 			await Promise.all([
-				import("@/server/auth/require-session.server"),
-				import("@/server/devices/device.repository.server"),
+				import("@/server/auth/require-session-server"),
+				import("@/server/devices/device.repository-server"),
 			]);
 
 		const session = await requireServerSession();
@@ -29,8 +29,8 @@ export const listRegisteredDevices = createServerFn({
 	method: "GET",
 }).handler(async () => {
 	const [{ requireServerSession }, { listDevicesForUser }] = await Promise.all([
-		import("@/server/auth/require-session.server"),
-		import("@/server/devices/device.repository.server"),
+		import("@/server/auth/require-session-server"),
+		import("@/server/devices/device.repository-server"),
 	]);
 
 	const session = await requireServerSession();
@@ -54,8 +54,8 @@ export const renameRegisteredDevice = createServerFn({
 	.handler(async ({ data }) => {
 		const [{ requireServerSession }, { renameDeviceForUser }] =
 			await Promise.all([
-				import("@/server/auth/require-session.server"),
-				import("@/server/devices/device.repository.server"),
+				import("@/server/auth/require-session-server"),
+				import("@/server/devices/device.repository-server"),
 			]);
 
 		const session = await requireServerSession();
@@ -75,8 +75,8 @@ export const revokeRegisteredDevice = createServerFn({
 	.handler(async ({ data }) => {
 		const [{ requireServerSession }, { revokeDeviceForUser }] =
 			await Promise.all([
-				import("@/server/auth/require-session.server"),
-				import("@/server/devices/device.repository.server"),
+				import("@/server/auth/require-session-server"),
+				import("@/server/devices/device.repository-server"),
 			]);
 
 		const session = await requireServerSession();

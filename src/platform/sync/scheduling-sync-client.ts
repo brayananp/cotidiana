@@ -12,7 +12,7 @@ import {
 	type TimeBlockSyncSnapshot,
 	timeBlockSyncSnapshotSchema,
 } from "./scheduling-sync.schemas";
-import { withSchedulingSyncLock } from "./scheduling-sync-lock-client";
+import { withSchedulingSyncLock } from "./sync-lock-client";
 import {
 	createSyncCursorId,
 	createSyncMetadataId,
@@ -46,7 +46,7 @@ export type RunSchedulingSyncResult = {
 export async function runSchedulingSync(
 	input: RunSchedulingSyncInput,
 ): Promise<RunSchedulingSyncResult | null> {
-	return withSchedulingSyncLock(async () => {
+	return withSchedulingSyncLock(input, async () => {
 		await setRuntimeState(input.userId, "syncing", null, true);
 
 		try {

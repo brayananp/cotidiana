@@ -14,8 +14,8 @@ import type {
 	PushOperationResult,
 	SyncOperationType,
 } from "@/platform/sync/sync.types";
-import { requireServerSession } from "@/server/auth/require-session.server";
-import { db } from "@/server/database/client.server";
+import { requireServerSession } from "@/server/auth/require-session-server";
+import { db } from "@/server/database/client-server";
 import { device } from "@/server/database/schema/device.schema";
 import { reminder } from "@/server/database/schema/reminder.schema";
 import {

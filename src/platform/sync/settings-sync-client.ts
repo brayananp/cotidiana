@@ -6,7 +6,7 @@ import {
 	pushSettingsOperationsFn,
 } from "./settings-sync.functions";
 import { userSettingsSyncSnapshotSchema } from "./settings-sync.schemas";
-import { withSettingsSyncLock } from "./settings-sync-lock-client";
+import { withSettingsSyncLock } from "./sync-lock-client";
 import {
 	createSyncCursorId,
 	createSyncMetadataId,
@@ -22,7 +22,7 @@ export async function runSettingsSync(input: {
 	userId: string;
 	deviceId: string;
 }) {
-	return withSettingsSyncLock(async () => {
+	return withSettingsSyncLock(input, async () => {
 		await setRuntimeState(input.userId, "syncing", null, true);
 
 		try {

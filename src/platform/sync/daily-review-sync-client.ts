@@ -5,7 +5,7 @@ import {
 	pushDailyReviewOperationsFn,
 } from "./daily-review-sync.functions";
 import { dailyReviewSyncSnapshotSchema } from "./daily-review-sync.schemas";
-import { withDailyReviewSyncLock } from "./daily-review-sync-lock-client";
+import { withDailyReviewSyncLock } from "./sync-lock-client";
 import { getNextRetryAt } from "./retry-policy";
 import {
 	createSyncCursorId,
@@ -24,7 +24,7 @@ const STALE_PROCESSING_MS = 2 * 60_000;
 export type RunDailyReviewSyncInput = { userId: string; deviceId: string };
 
 export async function runDailyReviewSync(input: RunDailyReviewSyncInput) {
-	return withDailyReviewSyncLock(async () => {
+	return withDailyReviewSyncLock(input, async () => {
 		await setRuntimeState(input.userId, "syncing", null, true);
 
 		try {

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { tursoClient } from "@/server/database/client.server";
+import { tursoClient } from "@/server/database/client-server";
 
 export const Route = createFileRoute("/api/health")({
 	server: {

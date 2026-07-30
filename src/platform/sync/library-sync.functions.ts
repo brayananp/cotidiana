@@ -10,7 +10,7 @@ export const pushLibraryOperationsFn = createServerFn({
 	.validator(pushLibraryInputSchema)
 	.handler(async ({ data }) => {
 		const { pushLibraryOperations } = await import(
-			"@/server/sync/library-sync.service.server"
+			"@/server/sync/library-sync.service-server"
 		);
 
 		return pushLibraryOperations(data);
@@ -22,7 +22,7 @@ export const pullLibraryChangesFn = createServerFn({
 	.validator(pullLibraryInputSchema)
 	.handler(async ({ data }) => {
 		const { pullLibraryChanges } = await import(
-			"@/server/sync/library-sync.service.server"
+			"@/server/sync/library-sync.service-server"
 		);
 
 		return pullLibraryChanges(data);

@@ -3,7 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { env } from "@/env";
 import * as authSchema from "@/server/database/schema/auth.schema";
-import { db } from "../database/client.server";
+import { db } from "../database/client-server";
 import { createBetterAuthRuntimeConfig } from "./auth-config-server";
 
 const runtimeConfig = createBetterAuthRuntimeConfig({

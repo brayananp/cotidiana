@@ -33,7 +33,7 @@ export type RunTaskSyncResult = {
 export async function runTaskSync(
 	input: RunTaskSyncInput,
 ): Promise<RunTaskSyncResult | null> {
-	return withTaskSyncLock(async () => {
+	return withTaskSyncLock(input, async () => {
 		await setRuntimeState(input.userId, "syncing", null, true);
 
 		try {

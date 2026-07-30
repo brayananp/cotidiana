@@ -3,7 +3,7 @@ import type {
 	RegisterDeviceInput,
 	RenameDeviceInput,
 } from "@/platform/auth/device.schema";
-import { db } from "@/server/database/client.server";
+import { db } from "@/server/database/client-server";
 import { device } from "@/server/database/schema/device.schema";
 
 export async function registerDeviceForUser(

@@ -66,8 +66,8 @@ export class ProductivityLocalDatabase extends Dexie {
 	syncConflicts!: EntityTable<SyncConflictRecord, "id">;
 	syncRuntime!: EntityTable<SyncRuntimeRecord, "id">;
 
-	constructor() {
-		super("personal-productivity-os");
+	constructor(databaseName = "personal-productivity-os") {
+		super(databaseName);
 
 		this.version(1).stores({
 			localDevices: "id, createdAt, lastOpenedAt",
@@ -273,6 +273,10 @@ export class ProductivityLocalDatabase extends Dexie {
 		this.version(10).stores({
 			dailyReviews:
 				"id, userId, reviewDate, completedAt, updatedAt, deletedAt, [userId+reviewDate], [userId+updatedAt]",
+		});
+		this.version(11).stores({
+			syncOperations:
+				"id, userId, deviceId, status, entityType, entityId, createdAt, nextRetryAt, [entityType+entityId], [status+createdAt], [userId+status]",
 		});
 	}
 }

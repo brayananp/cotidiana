@@ -11,7 +11,7 @@ import {
 	bookNoteSyncSnapshotSchema,
 	bookSyncSnapshotSchema,
 } from "./library-sync.schemas";
-import { withLibrarySyncLock } from "./library-sync-lock-client";
+import { withLibrarySyncLock } from "./sync-lock-client";
 import { getNextRetryAt } from "./retry-policy";
 import {
 	createSyncCursorId,
@@ -46,7 +46,7 @@ export type RunLibrarySyncResult = {
 export async function runLibrarySync(
 	input: RunLibrarySyncInput,
 ): Promise<RunLibrarySyncResult | null> {
-	return withLibrarySyncLock(async () => {
+	return withLibrarySyncLock(input, async () => {
 		await setRuntimeState(input.userId, "syncing", null, true);
 
 		try {

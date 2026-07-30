@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import {
 	pullTaskChanges,
 	pushTaskOperations,
-} from "@/server/sync/task-sync.service.server";
+} from "@/server/sync/task-sync.service-server";
 import { pullTasksInputSchema, pushTasksInputSchema } from "./sync.schemas";
 
 export const pushTaskOperationsFn = createServerFn({
