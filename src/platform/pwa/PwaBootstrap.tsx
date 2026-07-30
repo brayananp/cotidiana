@@ -214,7 +214,7 @@ function ensurePwaHeadElements(): void {
 
 	ensureMeta("application-name", "Personal Productivity OS");
 
-	ensureMeta("apple-mobile-web-app-capable", "yes");
+	ensureMeta("mobile-web-app-capable", "yes");
 
 	ensureLink({
 		rel: "manifest",

@@ -33,7 +33,7 @@ const serwist = new Serwist({
 
 	skipWaiting: false,
 	clientsClaim: true,
-	navigationPreload: true,
+	navigationPreload: false,
 	disableDevLogs: true,
 
 	fallbacks: {

@@ -20,11 +20,6 @@ export const pwaHead = {
 		},
 
 		{
-			name: "apple-mobile-web-app-capable",
-			content: "yes",
-		},
-
-		{
 			name: "apple-mobile-web-app-status-bar-style",
 			content: "default",
 		},
