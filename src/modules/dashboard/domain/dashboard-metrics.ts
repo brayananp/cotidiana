@@ -1,3 +1,5 @@
+import type { TaskPriority } from "#/modules/tasks";
+
 export type DashboardDayPoint = {
 	date: string;
 	label: string;
@@ -11,7 +13,7 @@ export type DashboardDayPoint = {
 export type DashboardPriorityTask = {
 	id: string;
 	title: string;
-	priority: string;
+	priority: TaskPriority;
 	dueAt: string | null;
 	overdue: boolean;
 };

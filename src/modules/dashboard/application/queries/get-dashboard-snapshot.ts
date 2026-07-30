@@ -1,3 +1,4 @@
+import type { TaskPriority } from "#/modules/tasks";
 import { localDateKey } from "../../domain/daily-review";
 import type {
 	DashboardDayPoint,
@@ -219,7 +220,7 @@ export function calculateDashboardMetrics(
 			.map((task) => ({
 				id: task.id,
 				title: task.title,
-				priority: task.priority,
+				priority: task.priority as TaskPriority,
 				dueAt: task.dueAt,
 				overdue: task.dueAt !== null && new Date(task.dueAt) < now,
 			})),

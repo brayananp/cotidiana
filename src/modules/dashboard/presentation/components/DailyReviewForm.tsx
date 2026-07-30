@@ -1,5 +1,14 @@
-import { CheckmarkCircle02Icon, StarIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import {
+	Activity01Icon,
+	AlignLeftIcon,
+	CheckmarkCircle02Icon,
+	Flag01Icon,
+	HappyIcon,
+	StopIcon,
+	Sun01Icon,
+	Target01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon, type HugeiconsIconProps } from "@hugeicons/react";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
@@ -12,10 +21,14 @@ import {
 } from "@/shared/components/ui/card";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Field, FieldGroup, FieldLabel } from "@/shared/components/ui/field";
-import { Input } from "@/shared/components/ui/input";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+	InputGroupTextarea,
+} from "@/shared/components/ui/input-group";
 import { Separator } from "@/shared/components/ui/separator";
 import { Spinner } from "@/shared/components/ui/spinner";
-import { Textarea } from "@/shared/components/ui/textarea";
 import {
 	ToggleGroup,
 	ToggleGroupItem,
@@ -26,13 +39,6 @@ import { dashboardDependencies } from "../../infrastructure/dashboard.dependenci
 import type { DailyReviewFormInput } from "../../schemas/daily-review-form.schema";
 
 const SCORES = [1, 2, 3, 4, 5] as const;
-const SCORE_LABELS: Record<number, string> = {
-	1: "😞",
-	2: "😕",
-	3: "😐",
-	4: "😊",
-	5: "🤩",
-};
 
 export function DailyReviewForm({
 	reviewDate,
@@ -57,8 +63,8 @@ export function DailyReviewForm({
 			{/* Header */}
 			<CardHeader className="px-4 pt-4 pb-3">
 				<CardTitle className="flex items-center gap-2 text-sm font-semibold">
-					<div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-						<HugeiconsIcon icon={StarIcon} size={13} />
+					<div className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+						<HugeiconsIcon icon={Flag01Icon} size={13} />
 					</div>
 					<span>Revisión diaria</span>
 				</CardTitle>
@@ -71,7 +77,7 @@ export function DailyReviewForm({
 
 			<CardContent className="px-4 py-3">
 				<form
-					className="flex flex-col gap-3"
+					className="flex flex-col gap-4"
 					onSubmit={async (event) => {
 						event.preventDefault();
 						setBusy(true);
@@ -99,20 +105,23 @@ export function DailyReviewForm({
 						}
 					}}
 				>
-					{/* Scores */}
-					<div className="grid grid-cols-3 gap-2">
-						<ScoreToggleField
+					{/* Score Rows — Vertically stacked to prevent horizontal collision */}
+					<div className="flex flex-col gap-2">
+						<ScoreRow
 							label="Ánimo"
+							icon={HappyIcon}
 							value={values.mood}
 							onChange={(mood) => setValues((v) => ({ ...v, mood }))}
 						/>
-						<ScoreToggleField
+						<ScoreRow
 							label="Energía"
+							icon={Sun01Icon}
 							value={values.energy}
 							onChange={(energy) => setValues((v) => ({ ...v, energy }))}
 						/>
-						<ScoreToggleField
+						<ScoreRow
 							label="Productividad"
+							icon={Activity01Icon}
 							value={values.productivity}
 							onChange={(productivity) =>
 								setValues((v) => ({ ...v, productivity }))
@@ -120,84 +129,100 @@ export function DailyReviewForm({
 						/>
 					</div>
 
-					<Separator className="my-0.5" />
+					<Separator />
 
 					{/* Wins & Blockers */}
-					<div className="grid gap-2 sm:grid-cols-2">
+					<div className="grid gap-3 sm:grid-cols-2">
 						<Field>
-							<FieldLabel className="text-[11px] font-semibold text-muted-foreground">
-								✅ Logros
+							<FieldLabel className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+								<HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} />
+								Logros
 							</FieldLabel>
-							<Textarea
-								rows={2}
-								value={values.wins}
-								onChange={(e) =>
-									setValues((v) => ({ ...v, wins: e.target.value }))
-								}
-								placeholder="¿Qué salió bien hoy?"
-								className="text-xs field-sizing-content resize-none min-h-[56px]"
-							/>
+							<InputGroup className="h-auto">
+								<InputGroupTextarea
+									rows={2}
+									value={values.wins}
+									onChange={(e) =>
+										setValues((v) => ({ ...v, wins: e.target.value }))
+									}
+									placeholder="¿Qué salió bien hoy?"
+									className="text-xs min-h-[52px]"
+								/>
+							</InputGroup>
 						</Field>
 
 						<Field>
-							<FieldLabel className="text-[11px] font-semibold text-muted-foreground">
-								🚧 Bloqueos
+							<FieldLabel className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+								<HugeiconsIcon icon={StopIcon} size={12} />
+								Bloqueos
 							</FieldLabel>
-							<Textarea
-								rows={2}
-								value={values.blockers}
-								onChange={(e) =>
-									setValues((v) => ({ ...v, blockers: e.target.value }))
-								}
-								placeholder="¿Qué te frenó?"
-								className="text-xs field-sizing-content resize-none min-h-[56px]"
-							/>
+							<InputGroup className="h-auto">
+								<InputGroupTextarea
+									rows={2}
+									value={values.blockers}
+									onChange={(e) =>
+										setValues((v) => ({ ...v, blockers: e.target.value }))
+									}
+									placeholder="¿Qué te frenó?"
+									className="text-xs min-h-[52px]"
+								/>
+							</InputGroup>
 						</Field>
 					</div>
 
-					{/* Notes — collapsible feel, single row by default */}
+					{/* Notes */}
 					<Field>
-						<FieldLabel className="text-[11px] font-semibold text-muted-foreground">
-							📝 Notas
+						<FieldLabel className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+							<HugeiconsIcon icon={AlignLeftIcon} size={12} />
+							Notas
 						</FieldLabel>
-						<Textarea
-							rows={2}
-							value={values.notes}
-							onChange={(e) =>
-								setValues((v) => ({ ...v, notes: e.target.value }))
-							}
-							placeholder="Reflexión libre del día..."
-							className="text-xs field-sizing-content resize-none min-h-[44px]"
-						/>
+						<InputGroup className="h-auto">
+							<InputGroupTextarea
+								rows={2}
+								value={values.notes}
+								onChange={(e) =>
+									setValues((v) => ({ ...v, notes: e.target.value }))
+								}
+								placeholder="Reflexión libre del día..."
+								className="text-xs min-h-[44px]"
+							/>
+						</InputGroup>
 					</Field>
 
-					<Separator className="my-0.5" />
+					<Separator />
 
 					{/* Tomorrow priorities */}
-					<FieldGroup className="flex flex-col gap-1.5">
-						<FieldLabel className="text-[11px] font-semibold text-muted-foreground">
-							🎯 Prioridades para mañana
+					<FieldGroup className="flex flex-col gap-2">
+						<FieldLabel className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+							<HugeiconsIcon icon={Target01Icon} size={12} />
+							Prioridades para mañana
 						</FieldLabel>
 						{([0, 1, 2] as const).map((index) => (
-							<Input
-								key={index}
-								value={values.tomorrowPriorities[index] ?? ""}
-								onChange={(event) => {
-									const priorities = [...values.tomorrowPriorities];
-									priorities[index] = event.target.value;
-									setValues((current) => ({
-										...current,
-										tomorrowPriorities: priorities,
-									}));
-								}}
-								placeholder={`Prioridad ${index + 1}`}
-								className="h-8 text-xs"
-							/>
+							<InputGroup key={index}>
+								<InputGroupAddon align="inline-start">
+									<span className="text-[10px] font-bold text-muted-foreground/60 tabular-nums">
+										{index + 1}
+									</span>
+								</InputGroupAddon>
+								<InputGroupInput
+									value={values.tomorrowPriorities[index] ?? ""}
+									onChange={(event) => {
+										const priorities = [...values.tomorrowPriorities];
+										priorities[index] = event.target.value;
+										setValues((current) => ({
+											...current,
+											tomorrowPriorities: priorities,
+										}));
+									}}
+									placeholder={`Prioridad ${index + 1}`}
+									className="h-8 text-xs"
+								/>
+							</InputGroup>
 						))}
 					</FieldGroup>
 
 					{/* Footer */}
-					<div className="flex items-center justify-between gap-3 pt-1">
+					<div className="flex items-center justify-between gap-3 pt-0.5">
 						<label
 							htmlFor="review-completed"
 							className="flex cursor-pointer items-center gap-2"
@@ -270,23 +295,29 @@ function defaults(review: DailyReview | null): DailyReviewFormInput {
 	};
 }
 
-function ScoreToggleField({
+/** Fila horizontal para cada métrica de score (evita desbordamientos en contenedores angostos) */
+function ScoreRow({
 	label,
+	icon,
 	value,
 	onChange,
 }: {
 	label: string;
+	icon: HugeiconsIconProps["icon"];
 	value: 1 | 2 | 3 | 4 | 5;
 	onChange: (value: 1 | 2 | 3 | 4 | 5) => void;
 }) {
 	return (
-		<div className="flex flex-col gap-1">
-			<span className="text-[11px] font-semibold text-muted-foreground">
-				{label}
-			</span>
-			{/* Emoji indicator */}
-			<div className="text-center text-base leading-none mb-0.5">
-				{SCORE_LABELS[value]}
+		<div className="flex items-center justify-between gap-2 py-0.5">
+			<div className="flex items-center gap-1.5 min-w-0">
+				<HugeiconsIcon
+					icon={icon}
+					size={14}
+					className="text-muted-foreground shrink-0"
+				/>
+				<span className="text-xs font-medium text-foreground truncate">
+					{label}
+				</span>
 			</div>
 			<ToggleGroup
 				value={[String(value)]}
@@ -294,14 +325,14 @@ function ScoreToggleField({
 					const selected = val[val.length - 1];
 					if (selected) onChange(Number(selected) as 1 | 2 | 3 | 4 | 5);
 				}}
-				className="w-full justify-between gap-0.5"
+				className="gap-1 shrink-0"
 			>
 				{SCORES.map((score) => (
 					<ToggleGroupItem
 						key={score}
 						value={String(score)}
 						size="sm"
-						className="h-7 flex-1 rounded-md text-[11px] font-bold data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+						className="size-7 rounded-lg text-xs font-semibold data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
 					>
 						{score}
 					</ToggleGroupItem>

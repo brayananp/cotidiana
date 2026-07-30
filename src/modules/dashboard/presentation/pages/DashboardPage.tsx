@@ -21,6 +21,25 @@ import {
 } from "../hooks/use-daily-reviews";
 import { useDashboard } from "../hooks/use-dashboard";
 
+// ── Motion variants ────────────────────────────────────────────────────────
+const pageVariants = {
+	hidden: { opacity: 0 },
+	show: {
+		opacity: 1,
+		transition: {
+			staggerChildren: 0.07,
+			delayChildren: 0.05,
+		},
+	},
+};
+
+const sectionVariants = {
+	hidden: { opacity: 0, y: 10 },
+	show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+};
+
+// ──────────────────────────────────────────────────────────────────────────
+
 export function DashboardPage() {
 	const { access } = useRouteContext({ from: "/_app" });
 	const identity = access.localIdentity;
@@ -55,23 +74,35 @@ function DashboardContent({
 
 	if (!metrics) return <DashboardSkeleton />;
 
+	const taskProgress =
+		metrics.today.completedTasks + metrics.today.plannedTasks > 0
+			? Math.round(
+					(metrics.today.completedTasks /
+						(metrics.today.completedTasks + metrics.today.plannedTasks)) *
+						100,
+				)
+			: undefined;
+
 	return (
 		<motion.section
-			initial={{ opacity: 0, y: 12 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.3 }}
+			variants={pageVariants}
+			initial="hidden"
+			animate="show"
 			className="flex flex-col gap-5"
 		>
 			{/* ── Header ── */}
-			<header className="flex flex-wrap items-end justify-between gap-3">
+			<motion.header
+				variants={{ sectionVariants }}
+				className="flex flex-wrap items-end justify-between gap-3"
+			>
 				<div>
-					<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+					<p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
 						{greeting()}, {name}
 					</p>
 					<h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
 						Tu día en una vista
 					</h1>
-					<p className="mt-0.5 text-xs text-muted-foreground">
+					<p className="mt-0.5 text-[11px] text-muted-foreground">
 						Métricas calculadas desde los datos locales de este dispositivo.
 					</p>
 				</div>
@@ -79,65 +110,76 @@ function DashboardContent({
 					variant="outline"
 					className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
 				>
-					<HugeiconsIcon icon={FireIcon} size={14} className="text-amber-500" />
+					<HugeiconsIcon icon={FireIcon} size={13} className="text-amber-500" />
 					<span>Racha: {metrics.streak.current} día(s)</span>
 				</Badge>
-			</header>
+			</motion.header>
 
-			{/* ── Metric cards — 2 cols mobile · 4 cols xl ── */}
-			<div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+			{/* ── Metric cards ── */}
+			<motion.div
+				variants={{ sectionVariants }}
+				className="grid grid-cols-2 gap-3 xl:grid-cols-4"
+			>
 				<MetricCard
+					index={0}
 					label="Tareas de hoy"
 					value={`${metrics.today.completedTasks}/${metrics.today.completedTasks + metrics.today.plannedTasks}`}
 					detail={`${metrics.today.taskCompletionRate}% · ${metrics.today.overdueTasks} vencidas`}
 					icon={CheckmarkCircle02Icon}
+					progress={taskProgress}
 				/>
 				<MetricCard
+					index={1}
 					label="Enfoque hoy"
 					value={`${metrics.today.focusMinutes} min`}
-					detail={`${metrics.today.completedMinutes}/${metrics.today.plannedMinutes} min`}
+					detail={`${metrics.today.completedMinutes} / ${metrics.today.plannedMinutes} min`}
 					icon={Clock01Icon}
 				/>
 				<MetricCard
-					label="Semana productiva"
-					value={`${metrics.week.productiveDays}/7 días`}
+					index={2}
+					label="Semana"
+					value={`${metrics.week.productiveDays}/7`}
 					detail={`${metrics.week.completedTasks} tareas · ${metrics.week.focusMinutes} min`}
 					icon={FireIcon}
 				/>
 				<MetricCard
+					index={3}
 					label="Lectura activa"
 					value={metrics.library.reading}
 					detail={
 						metrics.library.averageProgress === null
 							? `${metrics.library.completed} completados`
-							: `${metrics.library.averageProgress}% progreso medio`
+							: `${metrics.library.averageProgress}% progreso`
 					}
 					icon={BookOpen01Icon}
 				/>
-			</div>
+			</motion.div>
 
 			{/* ── Main body: 3-column grid on large screens ── */}
-			<div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(320px,0.85fr)]">
-				{/* Col 1 — Listas de actividades */}
-				<div className="flex flex-col gap-4">
+			<motion.div
+				variants={{ sectionVariants }}
+				className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(300px,0.8fr)]"
+			>
+				{/* Col 1 — Listas (mobile: order-2) */}
+				<div className="flex flex-col gap-4 order-2 lg:order-1">
 					<DashboardLists metrics={metrics} />
 				</div>
 
-				{/* Col 2 — Tendencia + Historial */}
-				<div className="flex flex-col gap-4">
+				{/* Col 2 — Tendencia + Historial (mobile: order-3) */}
+				<div className="flex flex-col gap-4 order-3 lg:order-2">
 					<WeeklyTrend points={metrics.week.points} />
 					<ReviewHistory reviews={history} />
 				</div>
 
-				{/* Col 3 — Revisión diaria (se ancla a la altura natural) */}
-				<div className="lg:sticky lg:top-4 lg:self-start">
+				{/* Col 3 — Revisión diaria (mobile: order-1, prioridad en mobile) */}
+				<div className="order-1 lg:order-3 lg:sticky lg:top-4 lg:self-start">
 					<DailyReviewForm
 						reviewDate={reviewDate}
 						review={review}
 						context={{ userId, deviceId }}
 					/>
 				</div>
-			</div>
+			</motion.div>
 		</motion.section>
 	);
 }
