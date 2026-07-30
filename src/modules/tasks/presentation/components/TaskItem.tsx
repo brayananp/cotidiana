@@ -255,14 +255,12 @@ export function TaskItem({ task, context, onEdit }: TaskItemProps) {
 							<HugeiconsIcon
 								icon={Clock01Icon}
 								size={12}
-								className={isOverdue ? "text-destructive" : ""}
+								className={isOverdue && !isDone ? "text-destructive" : ""}
 							/>
 							<span>
-								{isDone
-									? `Venció: ${formatDate(task.dueAt)}`
-									: isOverdue
-										? `Vencida · ${formatDate(task.dueAt)}`
-										: `Límite: ${formatDate(task.dueAt)}`}
+								{isOverdue
+									? `Vencida · ${formatDate(task.dueAt)}`
+									: `Límite: ${formatDate(task.dueAt)}`}
 							</span>
 						</div>
 					)}
