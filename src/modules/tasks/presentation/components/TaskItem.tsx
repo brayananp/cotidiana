@@ -1,14 +1,3 @@
-import { tasksDependencies } from "@/modules/tasks/infrastructure/tasks.dependencies";
-import { Badge } from "@/shared/components/ui/badge";
-import { Button } from "@/shared/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
 import {
 	Archive01Icon,
 	Calendar01Icon,
@@ -20,7 +9,18 @@ import {
 	PlayIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { tasksDependencies } from "@/modules/tasks/infrastructure/tasks.dependencies";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 import type { TaskExecutionContext } from "../../application/task-context";
 import type { Task, TaskPriority, TaskStatus } from "../../domain/task";
 import { taskPriorityLabels, taskStatusLabels } from "../task-labels";
@@ -38,7 +38,7 @@ const priorityStyles: Record<
 		className?: string;
 	}
 > = {
-	none: { variant: "outline", className: "opacity-50" },
+	none: { variant: "outline", className: "opacity-40" },
 	low: { variant: "secondary" },
 	medium: {
 		variant: "outline",
@@ -56,6 +56,8 @@ const priorityStyles: Record<
 export function TaskItem({ task, context, onEdit }: TaskItemProps) {
 	const isDone = task.status === "done";
 	const isInProgress = task.status === "in_progress";
+	const isOverdue =
+		!isDone && Boolean(task.dueAt && new Date(task.dueAt) < new Date());
 
 	const toggleComplete = async () => {
 		const nextStatus: TaskStatus = isDone ? "todo" : "done";
@@ -70,41 +72,75 @@ export function TaskItem({ task, context, onEdit }: TaskItemProps) {
 		<motion.div
 			whileHover={{ y: -1 }}
 			transition={{ duration: 0.15 }}
-			className={`group relative flex flex-col gap-2.5 rounded-2xl border bg-card p-3.5 transition-shadow hover:shadow-xs ${
-				isDone ? "bg-card/60 opacity-75" : ""
+			className={`group relative flex flex-col gap-2.5 rounded-2xl border bg-card p-3.5 transition-all duration-200 hover:shadow-sm ${
+				isDone
+					? "bg-card/50 opacity-70 border-border/50"
+					: isOverdue
+						? "border-destructive/30 bg-destructive/[0.02]"
+						: "border-border"
 			}`}
 		>
 			{/* Top Row: Checkbox + Title + Priority + Options Menu */}
 			<div className="flex items-start justify-between gap-3">
-				<div className="flex items-start gap-2.5 min-w-0 flex-1">
-					{/* Interactive Checkbox Button */}
-					<button
+				<div className="flex items-start gap-3 min-w-0 flex-1">
+					{/* Interactive Micro-animated Checkbox (Asana / Todoist style) */}
+					<motion.button
 						type="button"
 						onClick={toggleComplete}
-						className={`mt-0.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors ${
+						whileTap={{ scale: 0.85 }}
+						animate={isDone ? { scale: [0.85, 1.2, 1] } : { scale: 1 }}
+						transition={{ duration: 0.2 }}
+						className={`mt-0.5 relative flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 ${
 							isDone
-								? "border-primary bg-primary text-primary-foreground"
+								? "border-emerald-500 bg-emerald-500 text-white shadow-xs shadow-emerald-500/30"
 								: "border-muted-foreground/40 hover:border-primary hover:bg-primary/10"
 						}`}
 						title={isDone ? "Marcar como pendiente" : "Marcar como completada"}
 					>
-						{isDone && <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} />}
-					</button>
+						<AnimatePresence mode="wait">
+							{isDone && (
+								<motion.div
+									initial={{ scale: 0, rotate: -45 }}
+									animate={{ scale: 1, rotate: 0 }}
+									exit={{ scale: 0, rotate: 45 }}
+									transition={{ type: "spring", stiffness: 500, damping: 25 }}
+								>
+									<HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} />
+								</motion.div>
+							)}
+						</AnimatePresence>
+					</motion.button>
 
-					{/* Title & Description */}
+					{/* Title & Description with Animated Strike-through */}
 					<div className="flex flex-col gap-0.5 min-w-0 flex-1">
-						<h3
+						<button
+							type="button"
 							onClick={toggleComplete}
-							className={`cursor-pointer text-sm font-medium leading-snug select-none ${
-								isDone
-									? "line-through text-muted-foreground"
-									: "text-foreground"
-							}`}
+							className="text-left border-0 bg-transparent p-0 cursor-pointer group/title"
 						>
-							{task.title}
-						</h3>
+							<h3
+								className={`relative inline-block text-sm font-medium leading-snug select-none transition-colors duration-200 ${
+									isDone
+										? "text-muted-foreground"
+										: "text-foreground group-hover/title:text-primary"
+								}`}
+							>
+								{task.title}
+								{/* Animated Strike-through line */}
+								{isDone && (
+									<motion.span
+										initial={{ scaleX: 0 }}
+										animate={{ scaleX: 1 }}
+										transition={{ duration: 0.2, ease: "easeOut" }}
+										className="absolute left-0 top-1/2 h-[1.5px] w-full origin-left bg-muted-foreground/60"
+									/>
+								)}
+							</h3>
+						</button>
 						{task.description && (
-							<p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+							<p
+								className={`line-clamp-2 text-xs leading-relaxed ${isDone ? "text-muted-foreground/60" : "text-muted-foreground"}`}
+							>
 								{task.description}
 							</p>
 						)}
@@ -197,9 +233,9 @@ export function TaskItem({ task, context, onEdit }: TaskItemProps) {
 				</div>
 			</div>
 
-			{/* Dates Row (if plannedAt or dueAt exists) */}
+			{/* Dates Row — Properly handles completed vs overdue state */}
 			{(task.plannedAt || task.dueAt) && (
-				<div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-7 text-[11px] text-muted-foreground">
+				<div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-8 text-[11px] text-muted-foreground">
 					{task.plannedAt && (
 						<div className="flex items-center gap-1">
 							<HugeiconsIcon icon={Calendar01Icon} size={12} />
@@ -207,9 +243,27 @@ export function TaskItem({ task, context, onEdit }: TaskItemProps) {
 						</div>
 					)}
 					{task.dueAt && (
-						<div className="flex items-center gap-1 text-destructive font-medium">
-							<HugeiconsIcon icon={Clock01Icon} size={12} />
-							<span>Vence: {formatDate(task.dueAt)}</span>
+						<div
+							className={`flex items-center gap-1 ${
+								isDone
+									? "text-muted-foreground/60"
+									: isOverdue
+										? "text-destructive font-semibold"
+										: "text-muted-foreground"
+							}`}
+						>
+							<HugeiconsIcon
+								icon={Clock01Icon}
+								size={12}
+								className={isOverdue ? "text-destructive" : ""}
+							/>
+							<span>
+								{isDone
+									? `Venció: ${formatDate(task.dueAt)}`
+									: isOverdue
+										? `Vencida · ${formatDate(task.dueAt)}`
+										: `Límite: ${formatDate(task.dueAt)}`}
+							</span>
 						</div>
 					)}
 				</div>
