@@ -22,6 +22,7 @@ import {
 	type SyncRequestTarget,
 	subscribeToSyncRequests,
 } from "./sync-request-events-client";
+import { createSyncSessionStartRegistry } from "./sync-session-start-client";
 
 const PERIODIC_SYNC_MS = 60_000;
 
@@ -36,7 +37,7 @@ const ENTITY_TYPES: readonly SyncEntityType[] = [
 	"daily_review",
 ];
 
-const initializedSyncSessions = new Set<string>();
+const syncSessionStarts = createSyncSessionStartRegistry();
 
 export function GlobalSyncBootstrap({ access }: { access: AppAccess }) {
 	const router = useRouter();
@@ -53,16 +54,10 @@ export function GlobalSyncBootstrap({ access }: { access: AppAccess }) {
 			deviceId,
 		};
 		const sessionKey = `${userId}:${deviceId}`;
-		if (!access.canSynchronize) {
-			initializedSyncSessions.delete(sessionKey);
-		}
-
-		const requestOnStart =
-			access.canSynchronize && !initializedSyncSessions.has(sessionKey);
-
-		if (requestOnStart) {
-			initializedSyncSessions.add(sessionKey);
-		}
+		const releaseInitialSync = access.canSynchronize
+			? syncSessionStarts.acquire(sessionKey)
+			: null;
+		const requestOnStart = releaseInitialSync !== null;
 		const engines = {
 			tasks: {
 				run: async () => {
@@ -139,7 +134,6 @@ export function GlobalSyncBootstrap({ access }: { access: AppAccess }) {
 						return;
 					}
 
-					initializedSyncSessions.delete(sessionKey);
 					await setAllRuntimeStates(userId, "error", getErrorMessage(error));
 					await router.invalidate();
 				});
@@ -180,6 +174,7 @@ export function GlobalSyncBootstrap({ access }: { access: AppAccess }) {
 
 		return () => {
 			disposed = true;
+			releaseInitialSync?.();
 			stopLifecycle();
 		};
 	}, [
