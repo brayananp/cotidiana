@@ -1,8 +1,5 @@
 import type { LocalIdentityRecord } from "@/platform/database/local-database";
-import {
-	browserReportsOnline,
-	isServerAvailable,
-} from "@/platform/network/network-status";
+import { browserReportsOnline } from "@/platform/network/network-status";
 import { decideAppAccess } from "./access-decision";
 import type { AppAccess, LocalIdentitySnapshot } from "./app-access.types";
 import { authClient } from "./auth-client";
@@ -24,17 +21,6 @@ export async function resolveAppAccess(): Promise<AppAccess> {
 		return decideAppAccess({
 			localIdentity,
 			browserReportsOnline: false,
-			serverAvailable: false,
-			remoteSession: null,
-		});
-	}
-
-	const serverAvailable = await isServerAvailable();
-
-	if (!serverAvailable) {
-		return decideAppAccess({
-			localIdentity,
-			browserReportsOnline: true,
 			serverAvailable: false,
 			remoteSession: null,
 		});
