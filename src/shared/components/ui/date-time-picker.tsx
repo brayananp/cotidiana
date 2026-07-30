@@ -5,6 +5,19 @@ import {
 	Sun01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+	addDays,
+	format,
+	isToday,
+	isTomorrow,
+	isValid,
+	nextMonday,
+	parseISO,
+	setHours,
+	setMinutes,
+} from "date-fns";
+import { es } from "date-fns/locale";
+import type * as React from "react";
 import { useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -51,11 +64,11 @@ export function DateTimePicker({
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger
 				render={
-					<div
+					<button
 						id={id}
-						tabIndex={0}
+						type="button"
 						onBlur={onBlur}
-						className={`group relative flex h-9 w-full min-w-0 cursor-pointer items-center justify-between rounded-2xl border border-transparent bg-input/50 px-3 text-xs transition-colors hover:border-primary/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 ${className}`}
+						className={`group relative flex h-9 w-full min-w-0 cursor-pointer items-center justify-between rounded-2xl border border-transparent bg-input/50 px-3 text-xs transition-colors hover:border-primary/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 outline-none ${className}`}
 					>
 						<div className="flex items-center gap-2 min-w-0 flex-1">
 							<HugeiconsIcon
@@ -75,14 +88,21 @@ export function DateTimePicker({
 						</div>
 
 						{value ? (
-							<button
-								type="button"
+							<Button
+								variant="ghost"
+								size="icon"
 								onClick={handleClear}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										handleClear(e as unknown as React.MouseEvent);
+									}
+								}}
 								className="flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
 								title="Limpiar fecha"
 							>
 								<HugeiconsIcon icon={Cancel01Icon} size={12} />
-							</button>
+							</Button>
 						) : (
 							<HugeiconsIcon
 								icon={Clock01Icon}
@@ -90,7 +110,7 @@ export function DateTimePicker({
 								className="text-muted-foreground/60 shrink-0"
 							/>
 						)}
-					</div>
+					</button>
 				}
 			/>
 
@@ -100,7 +120,7 @@ export function DateTimePicker({
 						Acceso rápido
 					</span>
 
-					{/* Presets Grid */}
+					{/* Presets Grid using date-fns */}
 					<div className="grid grid-cols-2 gap-1.5 pt-1">
 						<Button
 							type="button"
@@ -195,69 +215,45 @@ export function DateTimePicker({
 	);
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────
+// ── Helpers using date-fns ────────────────────────────────────────────────
 
-function toLocalIso(d: Date): string {
-	const pad = (n: number) => String(n).padStart(2, "0");
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function toLocalIsoString(date: Date): string {
+	return format(date, "yyyy-MM-dd'T'HH:mm");
 }
 
 function getToday18(): string {
-	const d = new Date();
-	d.setHours(18, 0, 0, 0);
-	return toLocalIso(d);
+	const now = new Date();
+	const today18 = setMinutes(setHours(now, 18), 0);
+	return toLocalIsoString(today18);
 }
 
 function getTomorrow09(): string {
-	const d = new Date();
-	d.setDate(d.getDate() + 1);
-	d.setHours(9, 0, 0, 0);
-	return toLocalIso(d);
+	const tomorrow = addDays(new Date(), 1);
+	const tomorrow09 = setMinutes(setHours(tomorrow, 9), 0);
+	return toLocalIsoString(tomorrow09);
 }
 
 function getIn3Days09(): string {
-	const d = new Date();
-	d.setDate(d.getDate() + 3);
-	d.setHours(9, 0, 0, 0);
-	return toLocalIso(d);
+	const in3Days = addDays(new Date(), 3);
+	const in3Days09 = setMinutes(setHours(in3Days, 9), 0);
+	return toLocalIsoString(in3Days09);
 }
 
 function getNextMonday09(): string {
-	const d = new Date();
-	const day = d.getDay();
-	const diff = (8 - (day === 0 ? 7 : day)) % 7 || 7;
-	d.setDate(d.getDate() + diff);
-	d.setHours(9, 0, 0, 0);
-	return toLocalIso(d);
+	const nextMon = nextMonday(new Date());
+	const nextMon09 = setMinutes(setHours(nextMon, 9), 0);
+	return toLocalIsoString(nextMon09);
 }
 
 function formatDisplayDate(value: string): string {
 	if (!value) return "";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return "";
+	const date = parseISO(value);
+	if (!isValid(date)) return "";
 
-	const now = new Date();
-	const isToday =
-		date.getDate() === now.getDate() &&
-		date.getMonth() === now.getMonth() &&
-		date.getFullYear() === now.getFullYear();
+	const timeStr = format(date, "h:mm a", { locale: es });
 
-	const tomorrow = new Date(now);
-	tomorrow.setDate(tomorrow.getDate() + 1);
-	const isTomorrow =
-		date.getDate() === tomorrow.getDate() &&
-		date.getMonth() === tomorrow.getMonth() &&
-		date.getFullYear() === tomorrow.getFullYear();
+	if (isToday(date)) return `Hoy, ${timeStr}`;
+	if (isTomorrow(date)) return `Mañana, ${timeStr}`;
 
-	const timeStr = new Intl.DateTimeFormat("es-PE", {
-		timeStyle: "short",
-	}).format(date);
-
-	if (isToday) return `Hoy, ${timeStr}`;
-	if (isTomorrow) return `Mañana, ${timeStr}`;
-
-	return new Intl.DateTimeFormat("es-PE", {
-		dateStyle: "medium",
-		timeStyle: "short",
-	}).format(date);
+	return format(date, "EEE d 'de' MMM, h:mm a", { locale: es });
 }
