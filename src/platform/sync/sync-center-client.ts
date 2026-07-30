@@ -1,23 +1,13 @@
 import { getLocalDatabase } from "@/platform/database/local-database";
-import { requestDailyReviewSync } from "./daily-review-sync-events-client";
-import { requestLibrarySync } from "./library-sync-events-client";
-import { requestReminderSync } from "./reminder-sync-events-client";
-import { requestSchedulingSync } from "./scheduling-sync-events-client";
-import { requestSettingsSync } from "./settings-sync-events-client";
 import type { SyncEntityType, SyncOperationRecord } from "./sync.types";
 import {
 	deleteEntitySnapshot,
 	isDomainSyncEntityType,
 } from "./sync-entity-registry-client";
-import { requestTaskSync } from "./sync-events-client";
+import { requestSync } from "./sync-request-events-client";
 
 export function requestAllSync(): void {
-	requestTaskSync();
-	requestSchedulingSync();
-	requestReminderSync();
-	requestLibrarySync();
-	requestSettingsSync();
-	requestDailyReviewSync();
+	requestSync("all");
 }
 
 export async function retryFailedOperations(userId: string): Promise<number> {
@@ -134,32 +124,32 @@ export async function clearResolvedConflicts(userId: string): Promise<number> {
 
 export function requestSyncForEntity(entityType: SyncEntityType): void {
 	if (entityType === "task") {
-		requestTaskSync();
+		requestSync("tasks");
 		return;
 	}
 
 	if (entityType === "time_block" || entityType === "calendar_event") {
-		requestSchedulingSync();
+		requestSync("scheduling");
 		return;
 	}
 
 	if (entityType === "reminder") {
-		requestReminderSync();
+		requestSync("reminders");
 		return;
 	}
 
 	if (entityType === "book" || entityType === "book_note") {
-		requestLibrarySync();
+		requestSync("library");
 		return;
 	}
 
 	if (entityType === "user_settings") {
-		requestSettingsSync();
+		requestSync("settings");
 		return;
 	}
 
 	if (entityType === "daily_review") {
-		requestDailyReviewSync();
+		requestSync("daily-review");
 	}
 }
 

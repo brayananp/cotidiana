@@ -5,6 +5,7 @@ import {
 	type SyncOperationRecord,
 	type SyncOperationType,
 } from "@/platform/sync/sync.types";
+import { requestTaskSync } from "@/platform/sync/sync-events-client";
 import type {
 	TaskCommitResult,
 	TaskWriteStore,
@@ -20,7 +21,7 @@ export class DexieTaskWriteStore implements TaskWriteStore {
 	): Promise<TaskCommitResult> {
 		const db = getLocalDatabase();
 
-		return db.transaction(
+		const result: TaskCommitResult = await db.transaction(
 			"rw",
 			db.tasks,
 			db.syncOperations,
@@ -117,5 +118,11 @@ export class DexieTaskWriteStore implements TaskWriteStore {
 				};
 			},
 		);
+
+		if (result.type === "queued") {
+			requestTaskSync();
+		}
+
+		return result;
 	}
 }

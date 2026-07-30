@@ -1,6 +1,5 @@
 import type { CalendarEventRecord } from "@/modules/scheduling/infrastructure/local/calendar-event.record";
 import type { TimeBlockRecord } from "@/modules/scheduling/infrastructure/local/time-block.record";
-import { registerCurrentDevice } from "@/platform/auth/device.functions";
 import { getLocalDatabase } from "@/platform/database/local-database";
 import { getNextRetryAt } from "./retry-policy";
 import {
@@ -32,8 +31,6 @@ const PULL_BATCH_SIZE = 100;
 const MAX_BATCHES_PER_RUN = 10;
 const STALE_PROCESSING_MS = 2 * 60_000;
 
-const registeredDevicesThisSession = new Set<string>();
-
 export type RunSchedulingSyncInput = {
 	userId: string;
 	deviceId: string;
@@ -54,8 +51,6 @@ export async function runSchedulingSync(
 
 		try {
 			await recoverStaleOperations(input.userId, input.deviceId);
-
-			await ensureRemoteDevice(input);
 
 			let pushed = 0;
 			let pulled = 0;
@@ -175,42 +170,6 @@ async function recoverStaleOperations(
 			});
 		}
 	});
-}
-
-async function ensureRemoteDevice(
-	input: RunSchedulingSyncInput,
-): Promise<void> {
-	const db = getLocalDatabase();
-
-	const [device, identity] = await Promise.all([
-		db.localDevices.get(input.deviceId),
-		db.localIdentities.get(input.userId),
-	]);
-
-	if (!device) {
-		throw new Error("LOCAL_DEVICE_NOT_FOUND");
-	}
-
-	if (registeredDevicesThisSession.has(device.id)) {
-		return;
-	}
-
-	const registration = await registerCurrentDevice({
-		data: {
-			deviceId: device.id,
-			name: device.name,
-			platform: device.platform,
-		},
-	});
-
-	registeredDevicesThisSession.add(device.id);
-
-	if (identity) {
-		await db.localIdentities.update(identity.id, {
-			remoteRegisteredAt: registration.registeredAt,
-			updatedAt: new Date().toISOString(),
-		});
-	}
 }
 
 async function claimPushBatch(

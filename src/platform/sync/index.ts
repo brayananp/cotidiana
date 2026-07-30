@@ -1,3 +1,4 @@
+export { GlobalSyncBootstrap } from "./GlobalSyncBootstrap";
 export type {
 	PullDailyReviewChange,
 	PullLibraryChange,
@@ -18,5 +19,4 @@ export {
 	type SyncEngine,
 	type SyncRunOutcome,
 } from "./sync-coordinator-client";
-export { TaskSyncBootstrap } from "./TaskSyncBootstrap";
-export { useTaskSyncStatus } from "./use-task-sync-status";
+export { useGlobalSyncStatus } from "./use-global-sync-status";

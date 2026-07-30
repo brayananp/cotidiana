@@ -4,7 +4,7 @@ import {
 } from "@/platform/network/network-status";
 import type { AuthClientSession } from "./auth-client";
 import { authClient } from "./auth-client";
-import { registerCurrentDevice } from "./device.functions";
+import { ensureRemoteDeviceRegistered } from "./device-registration-client";
 import { LocalAccessRepository } from "./local-access.repository";
 
 const repository = new LocalAccessRepository();
@@ -13,24 +13,13 @@ export async function provisionLocalAccess(
 	session: AuthClientSession,
 ): Promise<void> {
 	const device = await repository.getOrCreateDevice();
+	const existingIdentity = await repository.getActiveIdentity();
 	const now = new Date().toISOString();
-
-	let remoteRegisteredAt: string | null = null;
-
-	try {
-		const registration = await registerCurrentDevice({
-			data: {
-				deviceId: device.id,
-				name: device.name,
-				platform: device.platform,
-			},
-		});
-
-		remoteRegisteredAt = registration.registeredAt;
-	} catch {
-		// The authenticated user can still initialize local access.
-		// Device registration can be retried on a later navigation.
-	}
+	const remoteRegisteredAt =
+		existingIdentity?.userId === session.user.id &&
+		existingIdentity.deviceId === device.id
+			? existingIdentity.remoteRegisteredAt
+			: null;
 
 	await repository.activateIdentity({
 		userId: session.user.id,
@@ -41,6 +30,13 @@ export async function provisionLocalAccess(
 		initializedAt: now,
 		lastAuthenticatedAt: now,
 		remoteRegisteredAt,
+	});
+
+	void ensureRemoteDeviceRegistered({
+		userId: session.user.id,
+		deviceId: device.id,
+	}).catch(() => {
+		// Local access is already active. The sync coordinator retries registration.
 	});
 }
 

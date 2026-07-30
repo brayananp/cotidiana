@@ -1,9 +1,6 @@
 "use client";
 
-import type { AppAccess } from "#/platform/auth/app-access.types";
-import { SchedulingSyncBootstrap } from "#/platform/sync/SchedulingSyncBootstrap";
 import { ResponsiveDialog } from "#/shared/components/responsive-dialog";
-import { SchedulingSyncStatus } from "#/shared/components/SchedulingSyncStatus";
 import { Button } from "#/shared/components/ui/button";
 import {
 	Card,
@@ -87,22 +84,16 @@ export function SchedulingPage() {
 	}
 
 	return (
-		<SchedulingContent
-			userId={identity.userId}
-			deviceId={identity.deviceId}
-			access={access}
-		/>
+		<SchedulingContent userId={identity.userId} deviceId={identity.deviceId} />
 	);
 }
 
 function SchedulingContent({
 	userId,
 	deviceId,
-	access,
 }: {
 	userId: string;
 	deviceId: string;
-	access: AppAccess;
 }) {
 	const [weekStart, setWeekStart] = useState(() =>
 		startOfLocalWeek(new Date()),
@@ -199,27 +190,6 @@ function SchedulingContent({
 
 	return (
 		<div className="flex flex-col gap-6">
-			<Card className="ring-1 ring-foreground/10 dark:ring-foreground/10">
-				<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<CardTitle className="text-base font-semibold tracking-tight">
-							Sincronización de datos
-						</CardTitle>
-						<CardDescription>
-							Estado offline, colas pendientes y resolución de conflictos.
-						</CardDescription>
-					</div>
-					<div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-						<SchedulingSyncBootstrap access={access} />
-						<SchedulingSyncStatus
-							userId={
-								access.localIdentity?.userId || access.remoteSession?.user.id
-							}
-						/>
-					</div>
-				</CardHeader>
-			</Card>
-
 			<Tabs
 				value={activeTab}
 				onValueChange={(value) => setActiveTab(value as ScheduleTab)}

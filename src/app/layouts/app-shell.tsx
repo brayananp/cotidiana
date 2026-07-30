@@ -1,20 +1,9 @@
 import { AppLockGate } from "#/modules/security";
 import { authClient } from "#/platform/auth/auth-client";
-import { subscribeToNetworkChanges } from "#/platform/network/network-status";
 import { ReminderSchedulerBootstrap } from "#/platform/notifications/ReminderSchedulerBootstrap";
 import { PwaBootstrap, PwaControls, PwaUpdatePrompt } from "#/platform/pwa";
-import { TaskSyncBootstrap } from "#/platform/sync";
-import { DailyReviewSyncBootstrap } from "#/platform/sync/DailyReviewSyncBootstrap";
-import { LibrarySyncBootstrap } from "#/platform/sync/LibrarySyncBootstrap";
-import { ReminderSyncBootstrap } from "#/platform/sync/ReminderSyncBootstrap";
-import { SchedulingSyncBootstrap } from "#/platform/sync/SchedulingSyncBootstrap";
-import { SettingsSyncBootstrap } from "#/platform/sync/SettingsSyncBootstrap";
-import { DailyReviewSyncStatus } from "#/shared/components/DailyReviewSyncStatus";
-import { LibrarySyncStatus } from "#/shared/components/LibrarySyncStatus";
-import { ReminderSyncStatus } from "#/shared/components/ReminderSyncStatus";
-import { SchedulingSyncStatus } from "#/shared/components/SchedulingSyncStatus";
-import { SettingsSyncStatus } from "#/shared/components/SettingsSyncStatus";
-import { TaskSyncStatus } from "#/shared/components/TaskSyncStatus";
+import { GlobalSyncBootstrap } from "#/platform/sync";
+import { GlobalSyncIndicator } from "#/shared/components/GlobalSyncIndicator";
 import { MenuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -22,9 +11,8 @@ import {
 	Outlet,
 	useNavigate,
 	useRouteContext,
-	useRouter,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import {
 	DropdownMenu,
@@ -54,7 +42,6 @@ const navItems = [
 
 export function AppShell() {
 	const navigate = useNavigate();
-	const router = useRouter();
 	const [mobileOpen, setMobileOpen] = useState(false);
 
 	const { access } = useRouteContext({
@@ -62,13 +49,6 @@ export function AppShell() {
 	});
 	const session = access.remoteSession;
 
-	useEffect(
-		() =>
-			subscribeToNetworkChanges(() => {
-				void router.invalidate();
-			}),
-		[router],
-	);
 	const NavLinks = ({ onClick }: { onClick?: () => void }) => (
 		<>
 			{navItems.map((item) => (
@@ -92,13 +72,8 @@ export function AppShell() {
 		<>
 			<PwaBootstrap />
 
-			<TaskSyncBootstrap access={access} />
-			<SchedulingSyncBootstrap access={access} />
-			<ReminderSyncBootstrap access={access} />
+			<GlobalSyncBootstrap access={access} />
 			<ReminderSchedulerBootstrap access={access} />
-			<LibrarySyncBootstrap access={access} />
-			<SettingsSyncBootstrap access={access} />
-			<DailyReviewSyncBootstrap access={access} />
 
 			<AppLockGate access={access}>
 				<div className="relative flex min-h-dvh flex-col">
@@ -117,12 +92,7 @@ export function AppShell() {
 						</div>
 
 						<div className="flex items-center gap-2">
-							<TaskSyncStatus userId={session?.user.id} />
-							<SchedulingSyncStatus userId={session?.user.id} />
-							<ReminderSyncStatus userId={session?.user.id} />
-							<LibrarySyncStatus userId={session?.user.id} />
-							<SettingsSyncStatus userId={session?.user.id} />
-							<DailyReviewSyncStatus userId={session?.user.id} />
+							<GlobalSyncIndicator userId={session?.user.id} />
 
 							<PwaControls />
 							<AccessBanner mode={access.mode} />

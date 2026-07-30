@@ -1,5 +1,4 @@
 import type { UserSettingsRecord } from "@/modules/settings/infrastructure/local/user-settings.record";
-import { registerCurrentDevice } from "@/platform/auth/device.functions";
 import { getLocalDatabase } from "@/platform/database/local-database";
 import { getNextRetryAt } from "./retry-policy";
 import {
@@ -17,7 +16,6 @@ import {
 	type SyncRuntimeState,
 } from "./sync.types";
 
-const registeredDevicesThisSession = new Set<string>();
 const STALE_PROCESSING_MS = 2 * 60_000;
 
 export async function runSettingsSync(input: {
@@ -29,8 +27,6 @@ export async function runSettingsSync(input: {
 
 		try {
 			await recoverStaleOperation(input.userId, input.deviceId);
-			await ensureRemoteDevice(input);
-
 			let pushed = 0;
 			let pulled = 0;
 			let conflicts = 0;
@@ -107,32 +103,6 @@ export async function runSettingsSync(input: {
 			throw error;
 		}
 	});
-}
-
-async function ensureRemoteDevice(input: {
-	userId: string;
-	deviceId: string;
-}): Promise<void> {
-	if (registeredDevicesThisSession.has(input.deviceId)) {
-		return;
-	}
-
-	const db = getLocalDatabase();
-	const device = await db.localDevices.get(input.deviceId);
-
-	if (!device) {
-		throw new Error("LOCAL_DEVICE_NOT_FOUND");
-	}
-
-	await registerCurrentDevice({
-		data: {
-			deviceId: device.id,
-			name: device.name,
-			platform: device.platform,
-		},
-	});
-
-	registeredDevicesThisSession.add(input.deviceId);
 }
 
 async function recoverStaleOperation(

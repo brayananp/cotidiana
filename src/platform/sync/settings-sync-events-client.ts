@@ -1,15 +1,5 @@
-const EVENT_NAME = "personal-productivity-os:settings-sync-request";
+import { requestSync } from "./sync-request-events-client";
 
 export function requestSettingsSync(): void {
-	window.dispatchEvent(new CustomEvent(EVENT_NAME));
-}
-
-export function subscribeToSettingsSyncRequests(
-	listener: () => void,
-): () => void {
-	window.addEventListener(EVENT_NAME, listener);
-
-	return () => {
-		window.removeEventListener(EVENT_NAME, listener);
-	};
+	requestSync("settings");
 }
